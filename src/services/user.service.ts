@@ -16,6 +16,14 @@ export async function createUser(
     throw new Error("Email já existe");
   }
 
+  const existingUsername = await prisma.user.findUnique({
+    where: { username },
+  });
+
+  if (existingUsername) {
+    throw new Error("Username já existe");
+  }
+
   const hashedPassword = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.create({
