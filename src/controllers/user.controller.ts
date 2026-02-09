@@ -25,3 +25,24 @@ export const registerController = async (req: Request, res: Response) => {
     return res.status(500).json({ error: "erro interno" });
   }
 };
+
+export const loginController = async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    const { token, user } = await userService.loginUser(email, password);
+
+    res.status(200).json({
+      message: "Login realizado!",
+      token: token,
+      user: user,
+    });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "Email ou senha incorretos") {
+        return res.status(400).json({ error: error.message });
+      }
+    }
+    return res.status(500).json({ error: "erro interno" });
+  }
+};
