@@ -1,0 +1,68 @@
+========================================
+  STUDYQUEST — CONTEXTO DE DESENVOLVIMENTO
+  Última sessão: 04/03/2026
+========================================
+
+O QUE FOI FEITO HOJE
+---------------------
+1. Schema do Prisma completo (prisma/schema.prisma)
+   - Modelos criados: User, StudySession, Subject, Area, Badge, UserBadge
+   - Migration rodada com sucesso (tabelas criadas no banco)
+
+2. Middleware de autenticação JWT
+   - Arquivo: src/middlewares/auth.middleware.ts
+   - Pega o token do header Authorization: Bearer <token>
+   - Valida o token com verifyToken()
+   - Salva o userId no req para as rotas usarem
+
+3. Tipos do Express estendidos
+   - Arquivo: src/types/express.d.ts
+   - Adicionado userId?: string no Request do Express
+
+
+PRÓXIMO PASSO — Endpoints de StudySession
+------------------------------------------
+Seguir a mesma estrutura que já existe para User:
+
+PASSO 1 — Criar src/services/session.service.ts
+  Funções:
+  - createSession(userId, subjectId, studyTime, questions, rate)
+    → salva a sessão no banco
+    → calcula e adiciona XP ao usuário
+  - listSessions(userId)
+    → retorna todas as sessões do usuário
+
+PASSO 2 — Criar src/controllers/session.controller.ts
+  - createSessionController → chama createSession do service
+  - listSessionsController  → chama listSessions do service
+
+PASSO 3 — Criar src/routes/session.routes.ts
+  - POST /sessions → authMiddleware + validateBody + createSessionController
+  - GET  /sessions → authMiddleware + listSessionsController
+
+PASSO 4 — Registrar em src/routes/index.ts
+  - Importar session.routes e adicionar: router.use("/sessions", Sessionrouter)
+
+
+DEPOIS DOS ENDPOINTS
+---------------------
+- Cálculo de XP (dentro do createSession no service)
+- Sistema de streak (verificar se estudou ontem, manter ou zerar)
+- Sistema de badges (verificar conquistas após cada sessão)
+
+
+ARQUIVOS IMPORTANTES
+---------------------
+- src/services/user.service.ts     → modelo de como escrever um service
+- src/controllers/user.controller.ts → modelo de como escrever um controller
+- src/routes/user.routes.ts        → modelo de como escrever uma route
+- src/middlewares/auth.middleware.ts → usar em toda rota protegida
+- src/middlewares/validation.middleware.ts → usar com schemas Zod
+- prisma/schema.prisma             → schema completo do banco
+
+
+COMO RODAR O PROJETO
+---------------------
+  npm run dev
+
+========================================

@@ -25,4 +25,60 @@ model User {
   xp        Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  userBadges UserBadge[]
+  sessions StudySession[]
+}
+
+model StudySession {
+  id String @id @default(uuid())
+  studyTime Int @default(0)
+  questions Int @default(0)
+  rate Int 
+  createdAt DateTime @default(now())
+
+  subjectId String
+  userId String
+  user User @relation(fields: [userId], references: [id])
+  subject Subject @relation(fields: [subjectId], references: [id])
+}
+
+model Badge {
+  id String @id @default(uuid())
+  badgeName String
+  badgeDescription String?
+  badgeImage String?
+  rarity Int
+  createdAt DateTime @default(now())
+  userBadges UserBadge[]
+}
+
+model UserBadge{
+  id String @id @default(uuid())
+  earnedAt DateTime @default(now())
+
+  userId String
+  user User @relation(fields: [userId], references: [id])
+
+  badgeId String
+  badge Badge @relation(fields: [badgeId], references: [id])
+}
+
+model Subject {
+  id String @id @default(uuid())
+  subjectName String 
+  subjectDescription String?
+
+  areaId String
+  area Area @relation(fields: [areaId], references: [id])
+  sessions StudySession[]
+}
+
+model Area {
+  id String @id @default(uuid())
+  areaName String
+  areaDescription String?
+
+
+  subjects Subject[]
 }
