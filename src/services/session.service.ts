@@ -27,6 +27,13 @@ export async function createStudySession(
   return result;
 }
 
+export async function listStudySessions(userId: string) {
+  return prisma.studySession.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 function calcularXP(studyTime: number) {
   if (studyTime <= 10) {
     return studyTime * 1.1;
