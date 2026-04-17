@@ -52,6 +52,7 @@ O StudyQuest é uma ferramenta web de registro e acompanhamento de estudos desen
 - **JWT** - Autenticação stateless segura
 - **Bcrypt** - Hash seguro de senhas
 - **Zod** - Validação de schemas
+- **Swagger** - Documentação interativa da API
 
 ### Ferramentas
 
@@ -80,7 +81,6 @@ cd studyquest
 ### 2. Configure o Backend
 
 ```bash
-cd backend
 npm install
 cp .env.example .env
 # Edite o arquivo .env com suas configurações
@@ -88,20 +88,16 @@ npx prisma migrate dev
 npm run dev
 ```
 
-### 3. Configure o Frontend
+### 3. Acesse no navegador
 
 ```bash
-cd frontend
-npm install
-cp .env.example .env.local
-# Edite o arquivo .env.local com suas configurações
-npm run dev
+http://localhost:<PORT>
 ```
 
-### 4. Acesse no navegador
+### 4. Acesse a documentação Swagger
 
-```
-http://localhost:3000
+```bash
+http://localhost:<PORT>/api/docs
 ```
 
 ## 🔑 Variáveis de Ambiente
@@ -128,24 +124,20 @@ NEXT_PUBLIC_API_URL=http://localhost:3333
 
 ## 📁 Estrutura do Projeto
 
-```
+```bash
 studyquest/
-├── frontend/
-│   ├── app/                  # Rotas e páginas (App Router)
-│   ├── components/           # Componentes reutilizáveis
-│   ├── lib/                  # Funções utilitárias e helpers
-│   ├── public/               # Arquivos estáticos
-│   └── .env.example          # Template de variáveis de ambiente
-├── backend/
-│   ├── src/
-│   │   ├── controllers/      # Lógica de controle das rotas
-│   │   ├── middlewares/      # Middlewares (auth, validação, etc)
-│   │   ├── routes/           # Definição das rotas da API
-│   │   ├── services/         # Regras de negócio (XP, badges, streak)
-│   │   └── utils/            # Funções auxiliares
-│   ├── prisma/               # Schema e migrações do Prisma
-│   ├── .env.example          # Template de variáveis de ambiente
-│   └── server.ts             # Ponto de entrada da aplicação
+├── src/
+│   ├── config/               # Configurações (banco, swagger)
+│   ├── controllers/          # Lógica de controle das rotas
+│   ├── middlewares/          # Middlewares (auth, validação)
+│   ├── routes/               # Definição das rotas da API
+│   ├── services/             # Regras de negócio (XP, badges, streak)
+│   ├── types/                # Tipos e extensões do TypeScript
+│   ├── utils/                # Funções auxiliares
+│   ├── validations/          # Schemas Zod de validação
+│   └── index.ts              # Ponto de entrada da aplicação
+├── prisma/                   # Schema e migrações do Prisma
+├── .env.example              # Template de variáveis de ambiente
 └── README.md
 ```
 
@@ -206,14 +198,15 @@ npm start
 ### 🔄 Fase 2 — Autenticação e Base
 
 - [ ] Telas de cadastro e login no frontend
-- [ ] Endpoints de autenticação com JWT no backend
+- [x] Endpoints de autenticação com JWT no backend
 - [ ] Integração frontend ↔ backend
-- [ ] Configuração do banco de dados e migrações
+- [x] Configuração do banco de dados e migrações
 
 ### 📅 Fase 3 — Core do Produto
 
-- [ ] Tela e endpoint de registro de estudos
-- [ ] Cálculo automático de XP
+- [x] Endpoint de criação de sessão de estudos (`POST /api/registros`)
+- [x] Endpoint de listagem de sessões (`GET /api/registros`)
+- [x] Cálculo automático de XP
 - [ ] Sistema de streak
 - [ ] Dashboard básico com resumo do perfil
 
