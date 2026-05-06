@@ -1,5 +1,6 @@
 import express from "express";
 import helmet from "helmet";
+import cors from "cors";
 import path from "path";
 import routes from "./routes";
 import swaggerUi from "swagger-ui-express";
@@ -9,6 +10,10 @@ import "dotenv/config";
 
 const server = express();
 server.use(helmet({ contentSecurityPolicy: false }));
+server.use(cors({
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  credentials: true,
+}));
 server.use(express.json());
 server.use(express.urlencoded({ extended: true }));
 server.use(express.static(path.join(__dirname, "../public")));

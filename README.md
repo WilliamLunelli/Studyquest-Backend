@@ -114,6 +114,32 @@ DATABASE_URL=postgresql://usuario:senha@localhost:5432/studyquest
 # Autenticação
 JWT_SECRET=sua_chave_secreta_aqui
 JWT_EXPIRES_IN=7d
+
+# CORS
+# O backend está configurado para aceitar requisições do frontend
+# Origem padrão: http://localhost:3000
+```
+
+### 🛡️ CORS (Cross-Origin Resource Sharing)
+
+O backend possui suporte a CORS habilitado com as seguintes configurações:
+
+- **Origin**: `http://localhost:3000` (desenvolvimento) 
+- **Credentials**: `true` (permite envio de cookies e headers de autenticação)
+
+A configuração está em `src/index.ts`. Para modificar a origem em produção, ajuste:
+
+```typescript
+server.use(cors({
+  origin: process.env.CORS_ORIGIN || "http://localhost:3000",
+  credentials: true,
+}));
+```
+
+E adicione ao `.env`:
+
+```env
+CORS_ORIGIN=https://seu-frontend.com
 ```
 
 ### Frontend — arquivo `.env.local`
