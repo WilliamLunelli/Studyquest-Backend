@@ -4,10 +4,6 @@ import { subjectController } from "../controllers/subject.controller";
 
 const router = Router();
 
-router.post(
-  "/api/subjects/:areaId",
-  authMiddleware,
-  subjectController.createSubject,
-);
+router.post("/:areaId", authMiddleware, subjectController.createSubject);
 
 export default router;
