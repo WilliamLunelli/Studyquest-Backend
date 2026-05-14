@@ -10,4 +10,61 @@ export const subjectRepostiory = {
       data: { areaId, subjectName, subjectDescription },
     });
   },
+
+  async getSubjectsById(
+    userId: string,
+    skip: number,
+    take: number,
+    areaId?: string,
+  ) {
+    if (areaId) {
+      return prisma.area.findMany({
+        skip,
+        take,
+        where: { id: areaId, userId },
+        select: {
+          id: true,
+          areaName: true,
+          areaDescription: true,
+          subjects: {
+            select: {
+              id: true,
+              subjectName: true,
+              subjectDescription: true,
+            },
+          },
+        },
+      });
+    }
+
+    return prisma.area.findMany({
+      skip,
+      take,
+      where: { userId },
+      select: {
+        id: true,
+        areaName: true,
+        areaDescription: true,
+        subjects: {
+          select: {
+            id: true,
+            subjectName: true,
+            subjectDescription: true,
+          },
+        },
+      },
+    });
+  },
+
+  async countSubjects(userId: string, areaId?: string) {
+    if (areaId) {
+      return prisma.subject.count({
+        where: { areaId, area: { userId } },
+      });
+    }
+
+    return prisma.subject.count({
+      where: { area: { userId } },
+    });
+  },
 };

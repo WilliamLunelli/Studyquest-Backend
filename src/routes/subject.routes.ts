@@ -6,4 +6,10 @@ const router = Router();
 
 router.post("/:areaId", authMiddleware, subjectController.createSubject);
 
+router.get(
+  "/list-subjects/:userId",
+  authMiddleware,
+  subjectController.listSubjects,
+);
+
 export default router;
