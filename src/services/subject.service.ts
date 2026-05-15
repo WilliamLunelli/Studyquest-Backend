@@ -51,3 +51,9 @@ export async function listSubjects(
 
   return { page, perPage, totalPages, total, data };
 }
+
+export async function getSubject(subjectId: string) {
+  const data = await subjectRepostiory.getSubjectById(subjectId);
+
+  return data;
+}

@@ -67,4 +67,22 @@ export const subjectRepostiory = {
       where: { area: { userId } },
     });
   },
+
+  async getSubjectById(subjectId: string) {
+    return prisma.subject.findFirst({
+      where: { id: subjectId },
+      select: {
+        id: true,
+        subjectName: true,
+        subjectDescription: true,
+        area: {
+          select: {
+            userId: true,
+            areaName: true,
+            areaDescription: true,
+          },
+        },
+      },
+    });
+  },
 };

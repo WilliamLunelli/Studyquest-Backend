@@ -27,6 +27,15 @@ export const subjectController = {
         });
       }
 
+      const userId = existAreaId.userId;
+
+      if (userId !== req.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Não autorizado.",
+        });
+      }
+
       const createSubjectSchema = createSubjectValidation.safeParse({
         areaId,
         subjectName,
@@ -103,6 +112,38 @@ export const subjectController = {
       return res.status(200).json({
         success: true,
         listResult,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor.",
+      });
+    }
+  },
+
+  async getSubject(req: Request, res: Response) {
+    try {
+      const { subjectId } = req.params;
+
+      if (typeof subjectId !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "subjectId inserido é inválido.",
+        });
+      }
+
+      const data = await subjectService.getSubject(subjectId);
+
+      if (data?.area.userId !== req.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Não autorizado.",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data,
       });
     } catch (error) {
       return res.status(500).json({

@@ -12,4 +12,9 @@ router.get(
   subjectController.listSubjects,
 );
 
+router.get(
+  "/get-subject/:subjectId",
+  authMiddleware,
+  subjectController.getSubject,
+);
 export default router;
