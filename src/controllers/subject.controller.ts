@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
-import { createSubjectValidation } from "../validations/subject.validation";
+import {
+  createSubjectValidation,
+  updateSubjectValidation,
+} from "../validations/subject.validation";
 import { areaRepository } from "../repositories/area.repository";
 import * as subjectService from "../services/subject.service";
-import { userRepository } from "../repositories/user.repository";
+import { subjectRepostiory } from "../repositories/subject.repository";
 
 export const subjectController = {
   async createSubject(req: Request, res: Response) {
@@ -149,6 +152,81 @@ export const subjectController = {
       return res.status(500).json({
         success: false,
         message: "Erro interno do servidor.",
+      });
+    }
+  },
+
+  async updateSubject(req: Request, res: Response) {
+    try {
+      const { subjectId } = req.params;
+
+      if (typeof subjectId !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "Não autorizado.",
+        });
+      }
+
+      const existSubject = await subjectRepostiory.getSubjectById(subjectId);
+
+      if (!existSubject) {
+        return res.status(404).json({
+          success: false,
+          message: "subjectId inválido.",
+        });
+      }
+
+      const userId = existSubject.area.userId;
+
+      if (userId !== req.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Não autorizado.",
+        });
+      }
+
+      const result = updateSubjectValidation.safeParse(req.body);
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Erro na validação.",
+          error: result.error.issues,
+        });
+      }
+
+      if (result.data.areaId) {
+        const area = await areaRepository.findAreaById(result.data.areaId);
+
+        if (!area) {
+          return res.status(404).json({
+            success: false,
+            message: "areaId inválido.",
+          });
+        }
+
+        if (req.userId !== area.userId) {
+          return res.status(403).json({
+            success: false,
+            message: "Acesso não autorizado.",
+          });
+        }
+      }
+
+      const data = await subjectRepostiory.updateSubject(
+        subjectId,
+        result.data,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Dados alterados com sucesso.",
+        data,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro interno no servidor.",
       });
     }
   },

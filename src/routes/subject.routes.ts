@@ -17,4 +17,10 @@ router.get(
   authMiddleware,
   subjectController.getSubject,
 );
+
+router.put(
+  "/update-subject/:subjectId",
+  authMiddleware,
+  subjectController.updateSubject,
+);
 export default router;

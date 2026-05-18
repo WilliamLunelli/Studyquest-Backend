@@ -57,3 +57,16 @@ export async function getSubject(subjectId: string) {
 
   return data;
 }
+
+export async function updateSubject(
+  subjectId: string,
+  subjectData: {
+    subjectName: string;
+    subjectDescription: string;
+    areaId: string;
+  },
+) {
+  const data = await subjectRepostiory.updateSubject(subjectId, subjectData);
+
+  return data;
+}

@@ -85,4 +85,25 @@ export const subjectRepostiory = {
       },
     });
   },
+
+  async updateSubject(
+    subjectId: string,
+    subjectData: Partial<{
+      subjectName: string;
+      subjectDescription: string;
+      areaId: string;
+    }>,
+  ) {
+    const data: any = {};
+
+    if (subjectData.subjectName) data.subjectName = subjectData.subjectName;
+    if (subjectData.subjectDescription)
+      data.subjectDescription = subjectData.subjectDescription;
+    if (subjectData.areaId) data.areaId = subjectData.areaId;
+
+    return await prisma.subject.update({
+      where: { id: subjectId },
+      data,
+    });
+  },
 };
