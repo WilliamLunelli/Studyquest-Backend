@@ -70,3 +70,9 @@ export async function updateSubject(
 
   return data;
 }
+
+export async function deleteSubject(subjectId: string) {
+  const data = await subjectRepostiory.deleteSubject(subjectId);
+
+  return data;
+}

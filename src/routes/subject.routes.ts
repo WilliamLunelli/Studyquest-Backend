@@ -23,4 +23,10 @@ router.put(
   authMiddleware,
   subjectController.updateSubject,
 );
+
+router.delete(
+  "/delete-subject/:subjectId",
+  authMiddleware,
+  subjectController.deleteSubject,
+);
 export default router;

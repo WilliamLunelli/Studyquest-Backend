@@ -6,6 +6,7 @@ import {
 import { areaRepository } from "../repositories/area.repository";
 import * as subjectService from "../services/subject.service";
 import { subjectRepostiory } from "../repositories/subject.repository";
+import { dmmfToRuntimeDataModel } from "@prisma/client/runtime/library";
 
 export const subjectController = {
   async createSubject(req: Request, res: Response) {
@@ -222,6 +223,55 @@ export const subjectController = {
         success: true,
         message: "Dados alterados com sucesso.",
         data,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Erro interno no servidor.",
+      });
+    }
+  },
+
+  async deleteSubject(req: Request, res: Response) {
+    try {
+      const { subjectId } = req.params;
+
+      if (typeof subjectId !== "string") {
+        return res.status(400).json({
+          success: false,
+          message: "subjectId inválido.",
+        });
+      }
+
+      const data = await subjectRepostiory.getSubjectById(subjectId);
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          message: "subjectId não existe.",
+        });
+      }
+
+      if (data.area.userId !== req.userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Não autorizado.",
+        });
+      }
+
+      if (data.sessions.length !== 0) {
+        return res.status(409).json({
+          success: false,
+          message: "Não é possível deletar materias vinculadas a sessões.",
+        });
+      }
+
+      const deletedData = await subjectService.deleteSubject(subjectId);
+
+      return res.status(200).json({
+        success: true,
+        message: "Matéria deletada com sucesso.",
+        data: deletedData,
       });
     } catch (error) {
       return res.status(500).json({

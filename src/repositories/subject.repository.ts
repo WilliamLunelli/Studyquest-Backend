@@ -82,6 +82,14 @@ export const subjectRepostiory = {
             areaDescription: true,
           },
         },
+        sessions: {
+          select: {
+            studyTime: true,
+            questions: true,
+            rate: true,
+            createdAt: true,
+          },
+        },
       },
     });
   },
@@ -105,5 +113,9 @@ export const subjectRepostiory = {
       where: { id: subjectId },
       data,
     });
+  },
+
+  async deleteSubject(subjectId: string) {
+    return prisma.subject.delete({ where: { id: subjectId } });
   },
 };
