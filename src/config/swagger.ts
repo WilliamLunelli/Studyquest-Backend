@@ -60,7 +60,7 @@ const options: swaggerJsdoc.Options = {
         },
         CreateSession: {
           type: "object",
-          required: ["subjectId", "studyTime", "rate"],
+          required: ["subjectId", "studyTime", "rate", "studiedAt"],
           properties: {
             subjectId: {
               type: "string",
@@ -86,6 +86,35 @@ const options: swaggerJsdoc.Options = {
               maximum: 10,
               example: 8,
               description: "Nota de 0 a 10",
+            },
+            studiedAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-05-19T14:00:00.000Z",
+              description: "Data e hora real do estudo (ISO 8601)",
+            },
+            correctAnswers: {
+              type: "integer",
+              minimum: 0,
+              example: 8,
+              description: "Questoes acertadas (opcional)",
+            },
+            sessionType: {
+              type: "string",
+              enum: ["pomodoro", "manual", "cronômetro"],
+              example: "manual",
+              description: "Tipo de sessao (opcional)",
+            },
+            pomodoroCount: {
+              type: "integer",
+              minimum: 0,
+              example: 4,
+              description: "Pomodoros completados (opcional)",
+            },
+            notes: {
+              type: "string",
+              example: "Estudei algebra hoje",
+              description: "Anotacoes livres (opcional)",
             },
           },
         },
@@ -160,6 +189,41 @@ const options: swaggerJsdoc.Options = {
             subjectDescription: {
               type: "string",
               example: "Estudos de algebra e geometria",
+            },
+          },
+        },
+        Area: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "a1b2c3d4-0000-0000-0000-000000000000",
+            },
+            userId: {
+              type: "string",
+              format: "uuid",
+              example: "b1c2d3e4-0000-0000-0000-000000000000",
+            },
+            areaName: { type: "string", example: "Exatas" },
+            areaDescription: {
+              type: "string",
+              example: "Materias de calculo e raciocinio logico",
+            },
+            subjects: {
+              type: "array",
+              items: { $ref: "#/components/schemas/Subject" },
+            },
+          },
+        },
+        CreateArea: {
+          type: "object",
+          required: ["areaName"],
+          properties: {
+            areaName: { type: "string", example: "Exatas" },
+            areaDescription: {
+              type: "string",
+              example: "Materias de calculo e raciocinio logico",
             },
           },
         },

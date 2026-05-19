@@ -32,11 +32,17 @@ model User {
 }
 
 model StudySession {
-  id        String   @id @default(uuid())
-  studyTime Int      @default(0)
-  questions Int      @default(0)
-  rate      Int
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  studyTime      Int      @default(0)
+  questions      Int      @default(0)
+  rate           Int
+  studiedAt      DateTime
+  correctAnswers Int?
+  sessionType    String?
+  pomodoroCount  Int?
+  xpEarned       Int?
+  notes          String?
+  createdAt      DateTime @default(now())
 
   subjectId String
   userId    String
