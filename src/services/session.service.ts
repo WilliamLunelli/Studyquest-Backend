@@ -1,45 +1,31 @@
-import prisma from "../config/database";
+import { calcularXP } from "../utils/xp.utils";
+import { sessionRepository } from "../repositories/session.repository";
+import { userRepository } from "../repositories/user.repository";
 
-export async function createStudySession(
-  userId: string,
-  subjectId: string,
-  studyTime: number,
-  questions: number,
-  rate: number,
-) {
-  const result = await prisma.studySession.create({
-    data: {
-      userId: userId,
-      subjectId: subjectId,
-      studyTime: studyTime,
-      questions: questions,
-      rate: rate,
-    },
+export async function createStudySession(data: {
+  userId: string;
+  subjectId: string;
+  studyTime: number;
+  questions: number;
+  rate: number;
+  studiedAt: Date;
+  correctAnswers?: number;
+  sessionType?: string;
+  pomodoroCount?: number;
+  notes?: string;
+}) {
+  const xpEarned = calcularXP(data.studyTime);
+
+  const result = await sessionRepository.createStudySession({
+    ...data,
+    xpEarned,
   });
 
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      xp: { increment: calcularXP(studyTime) },
-    },
-  });
+  await userRepository.incrementXP(data.userId, xpEarned);
 
   return result;
 }
 
 export async function listStudySessions(userId: string) {
-  return prisma.studySession.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
-}
-
-function calcularXP(studyTime: number) {
-  if (studyTime <= 10) {
-    return studyTime * 1.1;
-  } else if (studyTime > 10 && studyTime <= 30) {
-    return studyTime * 1.3;
-  } else {
-    return studyTime * 1.5;
-  }
+  return sessionRepository.listStudySessions(userId);
 }
