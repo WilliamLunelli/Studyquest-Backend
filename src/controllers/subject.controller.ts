@@ -73,22 +73,6 @@ export const subjectController = {
 
   async listSubjects(req: Request, res: Response) {
     try {
-      const { userId } = req.params;
-
-      if (typeof userId !== "string") {
-        return res.status(400).json({
-          success: false,
-          message: "userId inválido.",
-        });
-      }
-
-      if (req.userId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: "Não autorizado.",
-        });
-      }
-
       const areaId = String(req.query.areaId ?? "");
 
       if (areaId !== "") {
@@ -108,7 +92,7 @@ export const subjectController = {
       const query = { page, perPage };
 
       const listResult = await subjectService.listSubjects(
-        req.userId,
+        req.userId!,
         query,
         areaId,
       );

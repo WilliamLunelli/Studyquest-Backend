@@ -54,7 +54,7 @@ router.post("/:areaId", authMiddleware, subjectController.createSubject);
 
 /**
  * @openapi
- * /api/subject/list-subjects/{userId}:
+ * /api/subject/list-subjects:
  *   get:
  *     tags:
  *       - Materias
@@ -62,12 +62,6 @@ router.post("/:areaId", authMiddleware, subjectController.createSubject);
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *           format: uuid
  *       - in: query
  *         name: areaId
  *         required: false
@@ -142,17 +136,13 @@ router.post("/:areaId", authMiddleware, subjectController.createSubject);
  *                                 subjectDescription:
  *                                   type: string
  *                                   example: Algebra e geometria
- *       400:
- *         description: userId invalido
- *       403:
- *         description: Usuario nao autorizado
  *       404:
  *         description: Area nao encontrada
  *       500:
  *         description: Erro interno
  */
 router.get(
-  "/list-subjects/:userId",
+  "/list-subjects",
   authMiddleware,
   subjectController.listSubjects,
 );
