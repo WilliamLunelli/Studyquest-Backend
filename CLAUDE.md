@@ -213,6 +213,21 @@ enum ReviewStatus  { PENDENTE, CONCLUIDA, ARQUIVADA }
 - `QuestionLog(userId, topicId, data)` — acerto por assunto
 - `CycleBlock(cycleId, ordem)` — ponteiro do ciclo
 
+## Dívida conhecida — Subject duplicado entre áreas
+
+Subject.areaId é FK obrigatória e não há relação N:N, então matérias
+que aparecem em mais de uma área (ex: Português em "Linguagens" do
+ENEM e em "Conhecimentos Básicos" de concurso) existem como linhas
+distintas, com Topics próprios.
+
+Consequência: o histórico do usuário (sessões, revisões, acerto por
+assunto) não é compartilhado entre os dois. Trocar de objetivo perde
+o progresso naquela matéria.
+
+Aceito para o MVP: trocar de objetivo já invalida o ciclo, e o caso
+de uso é raro. Se virar problema, a correção é uma tabela
+intermediária AreaSubject (N:N), com migração dos dados existentes.
+
 ---
 
 # Endpoints
