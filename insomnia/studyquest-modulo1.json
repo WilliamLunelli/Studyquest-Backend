@@ -1,0 +1,196 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-03T00:00:00.000Z",
+  "__export_source": "studyquest.claude-code",
+  "resources": [
+    {
+      "_id": "wrk_studyquest",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "StudyQuest — Módulo 1 (Conta e Onboarding)",
+      "description": "Sequência: register -> login -> me -> goals -> goals/:id/weights -> me/goal -> me/availability -> me/difficulties"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_studyquest",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:7777",
+        "token": "",
+        "goal_id": "",
+        "subject_id_1": "",
+        "subject_id_2": ""
+      }
+    },
+    {
+      "_id": "req_1_register",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "1. POST /auth/register",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"William\",\n  \"email\": \"william@teste.com\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_2_login",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "2. POST /auth/login (copie o token pra env.token)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"william@teste.com\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -900
+    },
+    {
+      "_id": "req_2b_login_errado",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "2b. POST /auth/login com senha errada (espera 401)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/login",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"william@teste.com\",\n  \"senha\": \"errada\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_3_me",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "3. GET /auth/me",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/auth/me",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_4_goals",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "4. GET /goals",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/goals",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_4b_goals_enem",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "4b. GET /goals?tipo=enem (copie um id pra env.goal_id)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/goals",
+      "parameters": [{ "name": "tipo", "value": "enem" }],
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -500
+    },
+    {
+      "_id": "req_5_weights",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "5. GET /goals/:id/weights (copie subjectIds pra env.subject_id_1/2)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/goals/{{ _.goal_id }}/weights",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -400
+    },
+    {
+      "_id": "req_6_set_goal",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "6. PUT /me/goal",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/goal",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"goalId\": \"{{ _.goal_id }}\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -300
+    },
+    {
+      "_id": "req_7_availability",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "7. PUT /me/availability (7 dias obrigatórios)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/availability",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"disponibilidade\": [\n    { \"diaSemana\": 0, \"minutos\": 60 },\n    { \"diaSemana\": 1, \"minutos\": 120 },\n    { \"diaSemana\": 2, \"minutos\": 120 },\n    { \"diaSemana\": 3, \"minutos\": 120 },\n    { \"diaSemana\": 4, \"minutos\": 120 },\n    { \"diaSemana\": 5, \"minutos\": 60 },\n    { \"diaSemana\": 6, \"minutos\": 0 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -200
+    },
+    {
+      "_id": "req_7b_availability_invalida",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "7b. PUT /me/availability faltando um dia (espera 422)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/availability",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"disponibilidade\": [\n    { \"diaSemana\": 0, \"minutos\": 60 },\n    { \"diaSemana\": 1, \"minutos\": 120 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_8_difficulties",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "8. PUT /me/difficulties (precisa cobrir TODAS as matérias do objetivo — use env.subject_id_1/2 como amostra e complete o resto olhando a resposta do passo 5)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/difficulties",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dificuldades\": [\n    { \"subjectId\": \"{{ _.subject_id_1 }}\", \"nivel\": 3 },\n    { \"subjectId\": \"{{ _.subject_id_2 }}\", \"nivel\": 4 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": 0
+    },
+    {
+      "_id": "req_8b_difficulties_sem_goal",
+      "_type": "request",
+      "parentId": "wrk_studyquest",
+      "name": "8b. PUT /me/difficulties com outro usuário sem goal (espera 409)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/difficulties",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dificuldades\": [\n    { \"subjectId\": \"{{ _.subject_id_1 }}\", \"nivel\": 3 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": 100
+    }
+  ]
+}

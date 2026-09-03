@@ -6,8 +6,6 @@ import routes from "./routes";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./config/swagger";
 
-import testroutes from "./routes/index.test";
-
 import "dotenv/config";
 
 const server = express();
@@ -24,8 +22,6 @@ server.use(express.static(path.join(__dirname, "../public")));
 
 server.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 server.use("/api", routes);
-
-server.use("/api/test", testroutes);
 
 const PORT = process.env.PORT;
 

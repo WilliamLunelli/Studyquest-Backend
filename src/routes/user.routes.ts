@@ -1,8 +1,10 @@
 import { Router } from "express";
 import {
   loginController,
+  meController,
   registerController,
 } from "../controllers/user.controller";
+import { authMiddleware } from "../middlewares/auth.middleware";
 import { validateBody } from "../middlewares/validation.middleware";
 import { UserLogin, UserRegister } from "../validations/user.validations";
 
@@ -10,11 +12,11 @@ const router = Router();
 
 /**
  * @openapi
- * /api/users/register:
+ * /api/auth/register:
  *   post:
  *     tags:
- *       - Usuarios
- *     summary: Cadastrar novo usuario
+ *       - Autenticação
+ *     summary: Cadastrar novo usuário
  *     requestBody:
  *       required: true
  *       content:
@@ -23,19 +25,15 @@ const router = Router();
  *             $ref: "#/components/schemas/UserRegister"
  *     responses:
  *       201:
- *         description: Usuario criado com sucesso
+ *         description: Usuário criado com sucesso
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: usuario criado com sucesso
- *                 user:
- *                   $ref: "#/components/schemas/User"
- *       400:
- *         description: Email ja existe ou dados invalidos
+ *               $ref: "#/components/schemas/RegisterResponse"
+ *       409:
+ *         description: E-mail já cadastrado
+ *       422:
+ *         description: Dados de entrada inválidos
  *       500:
  *         description: Erro interno
  */
@@ -43,10 +41,10 @@ router.post("/register", validateBody(UserRegister), registerController);
 
 /**
  * @openapi
- * /api/users/login:
+ * /api/auth/login:
  *   post:
  *     tags:
- *       - Usuarios
+ *       - Autenticação
  *     summary: Fazer login
  *     requestBody:
  *       required: true
@@ -62,23 +60,41 @@ router.post("/register", validateBody(UserRegister), registerController);
  *             schema:
  *               type: object
  *               properties:
- *                 message:
- *                   type: string
- *                   example: Login realizado!
  *                 token:
  *                   type: string
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *                 user:
- *                   $ref: "#/components/schemas/User"
- *       400:
- *         description: Email ou senha incorretos
+ *                   $ref: "#/components/schemas/UserSummary"
+ *       401:
+ *         description: E-mail ou senha inválidos
+ *       422:
+ *         description: Dados de entrada inválidos
  *       500:
  *         description: Erro interno
  */
 router.post("/login", validateBody(UserLogin), loginController);
 
-// TODO: implement login, profile handlers
-// router.get("/profile");
-// router.put("/profile");
+/**
+ * @openapi
+ * /api/auth/me:
+ *   get:
+ *     tags:
+ *       - Autenticação
+ *     summary: Dados do usuário autenticado
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Usuário retornado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: "#/components/schemas/MeResponse"
+ *       401:
+ *         description: Token não fornecido ou inválido
+ *       500:
+ *         description: Erro interno
+ */
+router.get("/me", authMiddleware, meController);
 
 export default router;

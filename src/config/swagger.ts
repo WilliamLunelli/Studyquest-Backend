@@ -24,126 +24,46 @@ const options: swaggerJsdoc.Options = {
             message: { type: "string", example: "Dados invalidos" },
           },
         },
-        User: {
+        GoalListItem: {
           type: "object",
           properties: {
             id: {
-              type: "string",
-              format: "uuid",
-              example: "a1b2c3d4-0000-0000-0000-000000000000",
-            },
-            email: { type: "string", example: "william@email.com" },
-            username: { type: "string", example: "william" },
-          },
-        },
-        UserRegister: {
-          type: "object",
-          required: ["email", "username", "password"],
-          properties: {
-            email: { type: "string", example: "william@email.com" },
-            username: {
-              type: "string",
-              example: "william",
-              minLength: 3,
-              maxLength: 20,
-            },
-            password: { type: "string", example: "senha123", minLength: 6 },
-          },
-        },
-        UserLogin: {
-          type: "object",
-          required: ["email", "password"],
-          properties: {
-            email: { type: "string", example: "william@email.com" },
-            password: { type: "string", example: "senha123" },
-          },
-        },
-        CreateSession: {
-          type: "object",
-          required: ["subjectId", "studyTime", "rate"],
-          properties: {
-            subjectId: {
-              type: "string",
-              format: "uuid",
-              example: "a1b2c3d4-0000-0000-0000-000000000000",
-            },
-            studyTime: {
-              type: "integer",
-              minimum: 1,
-              example: 45,
-              description: "Tempo estudado em minutos",
-            },
-            questions: {
-              type: "integer",
-              minimum: 0,
-              example: 10,
-              default: 0,
-              description: "Quantidade de questoes respondidas",
-            },
-            rate: {
-              type: "number",
-              minimum: 0,
-              maximum: 10,
-              example: 8,
-              description: "Nota de 0 a 10",
-            },
-          },
-        },
-        StudySession: {
-          type: "object",
-          properties: {
-            id: {
-              type: "string",
-              format: "uuid",
-              example: "a1b2c3d4-0000-0000-0000-000000000000",
-            },
-            userId: {
               type: "string",
               format: "uuid",
               example: "b1c2d3e4-0000-0000-0000-000000000000",
             },
-            subjectId: {
+            tipo: { type: "string", enum: ["ENEM", "CONCURSO"], example: "ENEM" },
+            nome: { type: "string", example: "Medicina · UFG" },
+            instituicao: { type: "string", nullable: true, example: "UFG" },
+          },
+        },
+        GoalWeightItem: {
+          type: "object",
+          properties: {
+            areaId: {
               type: "string",
               format: "uuid",
               example: "c1d2e3f4-0000-0000-0000-000000000000",
             },
-            studyTime: { type: "integer", example: 45 },
-            questions: { type: "integer", example: 10 },
-            rate: { type: "number", example: 8 },
-            createdAt: {
-              type: "string",
-              format: "date-time",
-              example: "2026-04-17T12:00:00.000Z",
+            area: { type: "string", example: "Ciências da Natureza" },
+            peso: { type: "number", example: 3 },
+            subjects: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: {
+                    type: "string",
+                    format: "uuid",
+                    example: "d1e2f3a4-0000-0000-0000-000000000000",
+                  },
+                  nome: { type: "string", example: "Biologia" },
+                },
+              },
             },
           },
         },
-        CreateSubject: {
-          type: "object",
-          required: ["subjectName"],
-          properties: {
-            subjectName: { type: "string", example: "Matematica" },
-            subjectDescription: {
-              type: "string",
-              example: "Estudos de algebra e geometria",
-            },
-          },
-        },
-        UpdateSubject: {
-          type: "object",
-          properties: {
-            areaId: {
-              type: "string",
-              format: "uuid",
-              example: "a1b2c3d4-0000-0000-0000-000000000000",
-            },
-            subjectName: { type: "string", example: "Fisica" },
-            subjectDescription: {
-              type: "string",
-              example: "Cinematica e dinamica",
-            },
-          },
-        },
-        Subject: {
+        MeResponse: {
           type: "object",
           properties: {
             id: {
@@ -151,16 +71,77 @@ const options: swaggerJsdoc.Options = {
               format: "uuid",
               example: "a1b2c3d4-0000-0000-0000-000000000000",
             },
-            areaId: {
+            nome: { type: "string", example: "William" },
+            email: { type: "string", example: "william@email.com" },
+            objetivo: {
+              type: "object",
+              nullable: true,
+              properties: {
+                id: {
+                  type: "string",
+                  format: "uuid",
+                  example: "b1c2d3e4-0000-0000-0000-000000000000",
+                },
+                tipo: { type: "string", example: "ENEM" },
+                nome: { type: "string", example: "Medicina · UFG" },
+                instituicao: { type: "string", example: "UFG" },
+              },
+            },
+            xpTotal: { type: "integer", example: 0 },
+            nivel: { type: "integer", example: 1 },
+            streakAtual: { type: "integer", example: 0 },
+            onboardingCompleto: { type: "boolean", example: false },
+          },
+        },
+        UserSummary: {
+          type: "object",
+          properties: {
+            id: {
               type: "string",
               format: "uuid",
-              example: "b1c2d3e4-0000-0000-0000-000000000000",
+              example: "a1b2c3d4-0000-0000-0000-000000000000",
             },
-            subjectName: { type: "string", example: "Matematica" },
-            subjectDescription: {
+            nome: { type: "string", example: "william" },
+            email: { type: "string", example: "william@email.com" },
+            onboardingCompleto: { type: "boolean", example: false },
+          },
+        },
+        UserRegister: {
+          type: "object",
+          required: ["nome", "email", "senha"],
+          properties: {
+            nome: {
               type: "string",
-              example: "Estudos de algebra e geometria",
+              example: "William",
+              minLength: 2,
+              maxLength: 60,
             },
+            email: { type: "string", example: "william@email.com" },
+            senha: { type: "string", example: "senha123", minLength: 6 },
+          },
+        },
+        RegisterResponse: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "a1b2c3d4-0000-0000-0000-000000000000",
+            },
+            nome: { type: "string", example: "William" },
+            email: { type: "string", example: "william@email.com" },
+            token: {
+              type: "string",
+              example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+            },
+          },
+        },
+        UserLogin: {
+          type: "object",
+          required: ["email", "senha"],
+          properties: {
+            email: { type: "string", example: "william@email.com" },
+            senha: { type: "string", example: "senha123" },
           },
         },
       },

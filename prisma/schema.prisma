@@ -14,35 +14,309 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  username  String   @unique
-  password  String
-  avatar    String?
-  bio       String?
-  level     Int      @default(1)
-  xp        Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ---------------------------------------------------------------------------
+// Conta
+// ---------------------------------------------------------------------------
 
-  userBadges UserBadge[]
-  sessions   StudySession[]
-  areas      Area[]
+model User {
+  id    String @id @default(uuid())
+  email String @unique
+
+  /// Nome de exibição, não é único — só o e-mail identifica a conta.
+  /// Herdado da coluna `username` do schema antigo (sem migration de
+  /// rename); a API expõe esse valor como `nome`.
+  username           String
+  password           String
+  avatar             String?
+  bio                String?
+  xpTotal            Int      @default(0)
+  level              Int      @default(1)
+  streakAtual        Int      @default(0)
+  streakRecorde      Int      @default(0)
+  onboardingCompleto Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  goalId String?
+  goal   Goal?   @relation(fields: [goalId], references: [id])
+
+  userBadges     UserBadge[]
+  sessions       StudySession[]
+  difficulties   UserDifficulty[]
+  availabilities UserAvailability[]
+  studyCycles    StudyCycle[]
+  reviews        ReviewSchedule[]
+  questionLogs   QuestionLog[]
+  xpEvents       XpEvent[]
+  streakShields  StreakShield[]
+
+  @@map("users")
 }
 
-model StudySession {
-  id        String   @id @default(uuid())
-  studyTime Int      @default(0)
-  questions Int      @default(0)
-  rate      Int
-  createdAt DateTime @default(now())
+// ---------------------------------------------------------------------------
+// Catálogo: objetivo, área (peso), matéria (dificuldade), assunto
+// Hierarquia: Goal -> GoalWeight -> Area (peso) -> Subject (dificuldade) -> Topic
+// ---------------------------------------------------------------------------
+
+model Goal {
+  id           String   @id @default(uuid())
+  type         GoalType
+  nome         String
+  curso        String?
+  universidade String?
+  cargo        String?
+  banca        String?
+  createdAt    DateTime @default(now())
+
+  weights GoalWeight[]
+  users   User[]
+
+  @@map("goals")
+}
+
+model GoalWeight {
+  id   String @id @default(uuid())
+  peso Float
+
+  goalId String
+  goal   Goal   @relation(fields: [goalId], references: [id])
+
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  @@unique([goalId, areaId])
+  @@map("goal_weights")
+}
+
+model Area {
+  id   String @id @default(uuid())
+  nome String
+
+  goalWeights GoalWeight[]
+  subjects    Subject[]
+
+  @@map("areas")
+}
+
+model Subject {
+  id   String @id @default(uuid())
+  nome String
+
+  areaId String
+  area   Area   @relation(fields: [areaId], references: [id])
+
+  topics           Topic[]
+  userDifficulties UserDifficulty[]
+  cycleBlocks      CycleBlock[]
+  studySessions    StudySession[]
+
+  @@map("subjects")
+}
+
+model Topic {
+  id   String @id @default(uuid())
+  nome String
 
   subjectId String
-  userId    String
-  user      User    @relation(fields: [userId], references: [id])
   subject   Subject @relation(fields: [subjectId], references: [id])
+
+  cycleBlocks   CycleBlock[]
+  studySessions StudySession[]
+  reviews       ReviewSchedule[]
+  questionLogs  QuestionLog[]
+
+  @@map("topics")
 }
+
+// ---------------------------------------------------------------------------
+// Perfil do usuário dentro do catálogo
+// ---------------------------------------------------------------------------
+
+model UserDifficulty {
+  id String @id @default(uuid())
+
+  /// 0 = não respondido (valor padrão criado por PUT /me/goal, antes de o
+  /// usuário avaliar a matéria). 1-5 = escala válida de autoavaliação.
+  /// Nunca tratar 0 como nível real — é o sentinel de "onboarding incompleto".
+  dificuldade Int
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  @@unique([userId, subjectId])
+  @@map("user_difficulties")
+}
+
+model UserAvailability {
+  id        String @id @default(uuid())
+  diaSemana Int
+  minutos   Int
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, diaSemana])
+  @@map("user_availabilities")
+}
+
+// ---------------------------------------------------------------------------
+// Ciclo de estudos
+// ---------------------------------------------------------------------------
+
+model StudyCycle {
+  id           String   @id @default(uuid())
+  posicaoAtual Int      @default(0)
+  ativo        Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  blocks CycleBlock[]
+
+  @@map("study_cycles")
+}
+
+model CycleBlock {
+  id      String      @id @default(uuid())
+  ordem   Int
+  duracao Int
+  status  BlockStatus @default(PENDENTE)
+
+  cycleId String
+  cycle   StudyCycle @relation(fields: [cycleId], references: [id])
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  topicId String?
+  topic   Topic?  @relation(fields: [topicId], references: [id])
+
+  sessions StudySession[]
+
+  @@index([cycleId, ordem])
+  @@map("cycle_blocks")
+}
+
+// ---------------------------------------------------------------------------
+// Sessão cronometrada
+// ---------------------------------------------------------------------------
+
+model StudySession {
+  id                String        @id @default(uuid())
+  type              SessionType
+  preset            SessionPreset
+  status            SessionStatus @default(RUNNING)
+  startedAt         DateTime      @default(now())
+  resumedAt         DateTime?
+  minutosAcumulados Int           @default(0)
+  finishedAt        DateTime?
+  selfRating        SelfRating?
+  xpEarned          Int?
+  notes             String?
+  studiedAt         DateTime?
+  createdAt         DateTime      @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  subjectId String
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  topicId String?
+  topic   Topic?  @relation(fields: [topicId], references: [id])
+
+  cycleBlockId String?
+  cycleBlock   CycleBlock? @relation(fields: [cycleBlockId], references: [id])
+
+  originReviewId String?
+  originReview   ReviewSchedule? @relation("SessionOriginReview", fields: [originReviewId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, startedAt])
+  @@map("study_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// Revisão espaçada
+// ---------------------------------------------------------------------------
+
+model ReviewSchedule {
+  id           String       @id @default(uuid())
+  agendadaPara DateTime
+  repeticao    Int          @default(1)
+  status       ReviewStatus @default(PENDENTE)
+  createdAt    DateTime     @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  originOfSessions StudySession[] @relation("SessionOriginReview")
+
+  @@index([userId, agendadaPara, status])
+  @@map("review_schedules")
+}
+
+// ---------------------------------------------------------------------------
+// Questões
+// ---------------------------------------------------------------------------
+
+model QuestionLog {
+  id        String   @id @default(uuid())
+  feitas    Int
+  acertadas Int
+  data      DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  @@index([userId, topicId, data])
+  @@map("question_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Gamificação
+// ---------------------------------------------------------------------------
+
+model XpEvent {
+  id         String   @id @default(uuid())
+  quantidade Int
+  motivo     String
+  createdAt  DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@map("xp_events")
+}
+
+model StreakShield {
+  id        String    @id @default(uuid())
+  mes       Int
+  ano       Int
+  usado     Boolean   @default(false)
+  usadoEm   DateTime?
+  createdAt DateTime  @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, mes, ano])
+  @@map("streak_shields")
+}
+
+// ---------------------------------------------------------------------------
+// Badge / UserBadge — mantidas, sem endpoints nesta fase (fase 2)
+// ---------------------------------------------------------------------------
 
 model Badge {
   id               String      @id @default(uuid())
@@ -52,6 +326,8 @@ model Badge {
   rarity           Int
   createdAt        DateTime    @default(now())
   userBadges       UserBadge[]
+
+  @@map("badges")
 }
 
 model UserBadge {
@@ -63,24 +339,51 @@ model UserBadge {
 
   badgeId String
   badge   Badge  @relation(fields: [badgeId], references: [id])
+
+  @@map("user_badges")
 }
 
-model Subject {
-  id                 String  @id @default(uuid())
-  subjectName        String
-  subjectDescription String?
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
 
-  areaId   String
-  area     Area           @relation(fields: [areaId], references: [id])
-  sessions StudySession[]
+enum SessionType {
+  TEORIA
+  QUESTOES
+  REVISAO
 }
 
-model Area {
-  id              String  @id @default(uuid())
-  areaName        String
-  areaDescription String?
-  userId          String
+enum SessionStatus {
+  RUNNING
+  PAUSED
+  FINISHED
+  ABANDONED
+}
 
-  user     User      @relation(fields: [userId], references: [id])
-  subjects Subject[]
+enum SessionPreset {
+  P25_5
+  P50_10
+  LIVRE
+}
+
+enum SelfRating {
+  TRAVEI
+  OK
+  TRANQUILO
+}
+
+enum GoalType {
+  ENEM
+  CONCURSO
+}
+
+enum BlockStatus {
+  PENDENTE
+  CONCLUIDO
+}
+
+enum ReviewStatus {
+  PENDENTE
+  CONCLUIDA
+  ARQUIVADA
 }
