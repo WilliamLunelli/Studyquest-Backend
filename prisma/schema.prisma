@@ -19,9 +19,13 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 model User {
-  id                 String   @id @default(uuid())
-  email              String   @unique
-  username           String   @unique
+  id    String @id @default(uuid())
+  email String @unique
+
+  /// Nome de exibição, não é único — só o e-mail identifica a conta.
+  /// Herdado da coluna `username` do schema antigo (sem migration de
+  /// rename); a API expõe esse valor como `nome`.
+  username           String
   password           String
   avatar             String?
   bio                String?
@@ -129,7 +133,11 @@ model Topic {
 // ---------------------------------------------------------------------------
 
 model UserDifficulty {
-  id          String @id @default(uuid())
+  id String @id @default(uuid())
+
+  /// 0 = não respondido (valor padrão criado por PUT /me/goal, antes de o
+  /// usuário avaliar a matéria). 1-5 = escala válida de autoavaliação.
+  /// Nunca tratar 0 como nível real — é o sentinel de "onboarding incompleto".
   dificuldade Int
 
   userId String
