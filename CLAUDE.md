@@ -47,6 +47,14 @@
 
 ---
 
+## Git
+
+- Nunca adicione atribuição, assinatura ou co-autoria do Claude nas mensagens de commit
+- Não inclua rodapé "Generated with", "Co-Authored-By: Claude", emoji de robô ou similar
+- Mensagens de commit contêm apenas a descrição técnica da mudança
+
+---
+
 # StudyQuest — Documentação Técnica
 
 ## O que é o produto
