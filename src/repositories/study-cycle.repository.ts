@@ -144,6 +144,24 @@ export const studyCycleRepository = {
     });
   },
 
+  getCompletedTopicIdsByUser(userId: string) {
+    return prisma.cycleBlock.findMany({
+      where: {
+        status: "CONCLUIDO",
+        topicId: {
+          not: null,
+        },
+        cycle: {
+          userId,
+        },
+      },
+      distinct: ["topicId"],
+      select: {
+        topicId: true,
+      },
+    });
+  },
+
   updateBlock(userId: string, blockId: string, data: UpdateCycleBlockInput) {
     return prisma.$transaction(async (tx) => {
       const block = await tx.cycleBlock.findFirst({
@@ -174,6 +192,28 @@ export const studyCycleRepository = {
 
       if (!block) {
         return null;
+      }
+
+      const subjectId = data.subjectId ?? block.subjectId;
+      const topicId = data.topicId === undefined ? block.topicId : data.topicId;
+
+      if (
+        topicId !== null &&
+        (data.subjectId !== undefined || data.topicId !== undefined)
+      ) {
+        const topic = await tx.topic.findFirst({
+          where: {
+            id: topicId,
+            subjectId,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (!topic) {
+          return "INVALID_TOPIC" as const;
+        }
       }
 
       // se veio ordem, reorganiza todos os blocos
@@ -214,7 +254,6 @@ export const studyCycleRepository = {
         data: {
           duracao: data.duracaoMin,
           subjectId: data.subjectId,
-          // TODO validar antes se o topicId pertence ao subjectId final do bloco.
           topicId: data.topicId,
         },
         select: {
@@ -239,7 +278,7 @@ export const studyCycleRepository = {
     });
   },
 
-  completeBlock(userId: string, blockId: string, xpGanho: number) {
+  completeBlock(userId: string, blockId: string) {
     return prisma.$transaction(async (tx) => {
       const block = await tx.cycleBlock.findFirst({
         where: {
@@ -269,12 +308,20 @@ export const studyCycleRepository = {
         return null;
       }
 
-      const blocoAtualizado = await tx.cycleBlock.update({
-        where: { id: blockId },
+      const updateResult = await tx.cycleBlock.updateMany({
+        where: {
+          id: blockId,
+          status: "PENDENTE",
+        },
         data: {
           status: "CONCLUIDO",
         },
+      });
 
+      const xpGanho = updateResult.count > 0 ? 200 : 0;
+
+      const blocoAtualizado = await tx.cycleBlock.findUniqueOrThrow({
+        where: { id: blockId },
         select: {
           id: true,
           ordem: true,
@@ -297,15 +344,17 @@ export const studyCycleRepository = {
 
       const totalBlocos = block.cycle.blocks.length;
 
-      const novaPosicao =
-        totalBlocos === 0 ? 0 : (block.cycle.posicaoAtual + 1) % totalBlocos;
+      if (updateResult.count > 0) {
+        const novaPosicao =
+          totalBlocos === 0 ? 0 : (block.cycle.posicaoAtual + 1) % totalBlocos;
 
-      await tx.studyCycle.update({
-        where: { id: block.cycle.id },
-        data: {
-          posicaoAtual: novaPosicao,
-        },
-      });
+        await tx.studyCycle.update({
+          where: { id: block.cycle.id },
+          data: {
+            posicaoAtual: novaPosicao,
+          },
+        });
+      }
 
       if (xpGanho > 0) {
         await tx.user.update({
@@ -326,15 +375,28 @@ export const studyCycleRepository = {
         });
       }
 
-      return blocoAtualizado;
+      return { bloco: blocoAtualizado, xpGanho };
     });
   },
 
   getFinishedMinutesBySubject(userId: string) {
+    const startOfWeek = new Date();
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(endOfWeek.getDate() + 7);
+
     return prisma.studySession.groupBy({
       by: ["subjectId"],
-      // TODO filtrar apenas sessoes finalizadas dentro da semana atual.
-      where: { userId, status: "FINISHED" },
+      where: {
+        userId,
+        status: "FINISHED",
+        finishedAt: {
+          gte: startOfWeek,
+          lt: endOfWeek,
+        },
+      },
       _sum: {
         minutosAcumulados: true,
       },

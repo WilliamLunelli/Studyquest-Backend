@@ -46,9 +46,14 @@ export function intercalarBlocos(blocks: CreateCycleBlockInput[]) {
         return b[1].length - a[1].length;
       });
 
-    const materiaEscolhida = materiasDisponiveis[0];
+    const materiaEscolhida =
+      materiasDisponiveis[0] ??
+      [...blocosPorMateria.entries()]
+        .filter(([, lista]) => lista.length > 0)
+        .sort((a, b) => {
+          return b[1].length - a[1].length;
+        })[0];
 
-    // TODO criar fallback para nao perder blocos quando so sobra a mesma materia da ultima rodada.
     if (!materiaEscolhida) {
       break;
     }

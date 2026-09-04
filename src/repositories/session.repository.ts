@@ -8,7 +8,6 @@ const SESSION_SELECT = {
   startedAt: true,
   resumedAt: true,
   minutosAcumulados: true,
-  duracaoAlvoMin: true,
   preset: true,
   type: true,
 };
@@ -42,7 +41,7 @@ export const sessionRepository = {
     });
   },
 
-  create(userId: string, data: CreateSessionInput, targetDurationMin: number | null) {
+  create(userId: string, data: CreateSessionInput) {
     // startedAt and resumedAt are written with the same instant: that's
     // what makes calculateAccumulatedMinutes treat a "just created
     // session" and a "resumed session" the same way (RUNNING = minutosAcumulados
@@ -58,7 +57,6 @@ export const sessionRepository = {
         originReviewId: data.reviewId ?? null,
         type: data.tipo,
         preset: data.preset,
-        duracaoAlvoMin: targetDurationMin,
         startedAt: now,
         resumedAt: now,
       },

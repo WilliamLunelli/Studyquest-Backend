@@ -12,6 +12,13 @@ import { AppError } from "../utils/app-error";
 import { fatiarEmBlocos, intercalarBlocos } from "../utils/cycle";
 import { checkOnboardingStatus } from "./user.service";
 
+type ScoreItem = {
+  subjectId: string;
+  materia: string;
+  peso: number;
+  score: number;
+};
+
 export async function createCycle(
   userId: string,
 ): Promise<CreateCycleResponse> {
@@ -52,13 +59,16 @@ export async function createCycle(
     });
   });
 
-  const totalScores = scores.reduce((total, item) => {
-    return total + item.score;
+  const scoreAjustadoPorMateria = ajustarScoresSemInverterPesos(scores);
+
+  const totalScoresAjustados = scores.reduce((total, item) => {
+    return total + (scoreAjustadoPorMateria.get(item.subjectId) ?? item.score);
   }, 0);
 
   const scoreComMinutos = scores.map((item) => {
-    // TODO garantir que a dificuldade nao faca uma materia de peso menor receber mais tempo que uma de peso maior.
-    const proporcao = item.score / totalScores;
+    const scoreAjustado =
+      scoreAjustadoPorMateria.get(item.subjectId) ?? item.score;
+    const proporcao = scoreAjustado / totalScoresAjustados;
     const minutos = Math.round(totalMinutosSemana * proporcao);
 
     return {
@@ -68,15 +78,31 @@ export async function createCycle(
     };
   });
 
+  const completedTopicIds = new Set(
+    (await studyCycleRepository.getCompletedTopicIdsByUser(userId))
+      .map((item) => {
+        return item.topicId;
+      })
+      .filter((topicId): topicId is string => {
+        return topicId !== null;
+      }),
+  );
+
   let blocks: CreateCycleBlockInput[] = [];
   let ordemValue = 1;
 
   scoreComMinutos.forEach((item) => {
     const duracoes = fatiarEmBlocos(item.minutos);
+    const pendingTopics = item.topics.filter((topic) => {
+      return !completedTopicIds.has(topic.id);
+    });
+
+    if (pendingTopics.length === 0) {
+      return;
+    }
 
     duracoes.forEach((duracao, index) => {
-      // TODO usar apenas assuntos ainda nao concluidos da materia, exceto quando for bloco de revisao.
-      const topic = item.topics[index % item.topics.length];
+      const topic = pendingTopics[index % pendingTopics.length];
       blocks.push({
         ordem: ordemValue,
         duracao,
@@ -89,6 +115,10 @@ export async function createCycle(
   });
 
   const blocosIntercalados = intercalarBlocos(blocks);
+
+  if (blocosIntercalados.length === 0) {
+    throw new AppError(409, "Nenhum assunto pendente disponivel para gerar o ciclo.");
+  }
 
   const cycle = await studyCycleRepository.createCycleWithBlocks(
     userId,
@@ -153,7 +183,11 @@ export async function updateBlock(
     data,
   );
 
-  if (!updatedBlock) {
+  if (updatedBlock === "INVALID_TOPIC") {
+    throw new AppError(422, "O assunto informado nao pertence a materia escolhida.");
+  }
+
+  if (updatedBlock === null) {
     throw new AppError(404, "Bloco de ciclo não encontrado.");
   }
 
@@ -173,28 +207,13 @@ export async function completeBlock(
   userId: string,
   blockId: string,
 ): Promise<CompleteCycleResponse> {
-  // TODO validar conclusao e XP dentro da mesma transaction para evitar duas requisicoes concederem XP ao mesmo tempo.
-  let xpGanho: number = 200;
+  const result = await studyCycleRepository.completeBlock(userId, blockId);
 
-  const isConcluido = await studyCycleRepository.getBlockById(blockId);
-
-  if (!isConcluido) {
-    throw new AppError(409, "Bloco não encontrado.");
-  }
-
-  if (isConcluido.status === "CONCLUIDO") {
-    xpGanho = 0;
-  }
-
-  const bloco = await studyCycleRepository.completeBlock(
-    userId,
-    blockId,
-    xpGanho,
-  );
-
-  if (!bloco) {
+  if (!result) {
     throw new AppError(404, "Bloco do ciclo não encontrado.");
   }
+
+  const { bloco, xpGanho } = result;
 
   return {
     bloco: {
@@ -205,7 +224,6 @@ export async function completeBlock(
       topicId: bloco.topic?.id ?? null,
       assunto: bloco.topic?.nome ?? null,
       duracaoMin: bloco.duracao,
-      // TODO manter o status exatamente como a API espera: "pendente" ou "concluido", sem acento.
       status: bloco.status === "CONCLUIDO" ? "concluído" : "pendente",
     },
     xpGanho,
@@ -256,8 +274,10 @@ export async function getCycleAlignment(
     });
   });
 
+  const scoreAjustadoPorMateria = ajustarScoresSemInverterPesos(scores);
+
   const totalScores = scores.reduce((total, item) => {
-    return total + item.score;
+    return total + (scoreAjustadoPorMateria.get(item.subjectId) ?? item.score);
   }, 0);
 
   const minutosReais =
@@ -270,8 +290,11 @@ export async function getCycleAlignment(
   );
 
   return scores.map((item) => {
+    const scoreAjustado =
+      scoreAjustadoPorMateria.get(item.subjectId) ?? item.score;
+
     const minutosIdeaisSemana = Math.round(
-      totalMinutosSemana * (item.score / totalScores),
+      totalMinutosSemana * (scoreAjustado / totalScores),
     );
 
     const minutosReaisSemana = minutosReaisPorMateria.get(item.subjectId) ?? 0;
@@ -298,4 +321,50 @@ export async function getCycleAlignment(
       status,
     };
   });
+}
+
+function ajustarScoresSemInverterPesos(scores: ScoreItem[]) {
+  const scoreAjustadoPorMateria = new Map<string, number>();
+  const scoresPorPeso = [...scores].sort((a, b) => {
+    return b.peso - a.peso;
+  });
+  let menorScorePesoMaior = Infinity;
+
+  for (let index = 0; index < scoresPorPeso.length; ) {
+    const primeiroItemDoGrupo = scoresPorPeso[index];
+
+    if (!primeiroItemDoGrupo) {
+      break;
+    }
+
+    const pesoAtual = primeiroItemDoGrupo.peso;
+    const grupoMesmoPeso: ScoreItem[] = [];
+
+    while (index < scoresPorPeso.length) {
+      const item = scoresPorPeso[index];
+
+      if (!item || item.peso !== pesoAtual) {
+        break;
+      }
+
+      grupoMesmoPeso.push(item);
+      index++;
+    }
+
+    grupoMesmoPeso.forEach((item) => {
+      scoreAjustadoPorMateria.set(
+        item.subjectId,
+        Math.min(item.score, menorScorePesoMaior),
+      );
+    });
+
+    menorScorePesoMaior = Math.min(
+      menorScorePesoMaior,
+      ...grupoMesmoPeso.map((item) => {
+        return scoreAjustadoPorMateria.get(item.subjectId) ?? item.score;
+      }),
+    );
+  }
+
+  return scoreAjustadoPorMateria;
 }
