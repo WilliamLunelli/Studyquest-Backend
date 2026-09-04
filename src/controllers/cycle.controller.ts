@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import * as cycleService from "../services/cycle.service";
 import { handleControllerError } from "../utils/app-error";
-import { request } from "node:http";
 
 export const cycleController = {
   async generate(req: Request, res: Response) {
@@ -29,7 +28,7 @@ export const cycleController = {
       const { id } = req.params;
 
       if (!id) {
-        return res.status(400).json({ messge: "ID inserido é inválido." });
+        return res.status(400).json({ message: "ID inserido é inválido." });
       }
 
       const block = await cycleService.updateBlock(req.userId!, id, req.body);
