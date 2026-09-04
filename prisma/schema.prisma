@@ -213,6 +213,10 @@ model StudySession {
   startedAt         DateTime      @default(now())
   resumedAt         DateTime?
   minutosAcumulados Int           @default(0)
+  /// Meta de duração informada na criação (25 para P25_5, 50 para
+  /// P50_10, null para LIVRE). Metadado do preset — o XP usa minutos
+  /// reais, nunca este valor.
+  duracaoAlvoMin    Int?
   finishedAt        DateTime?
   selfRating        SelfRating?
   xpEarned          Int?

@@ -1,0 +1,215 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-04T00:00:00.000Z",
+  "__export_source": "studyquest.claude-code",
+  "resources": [
+    {
+      "_id": "wrk_studyquest_m4",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "StudyQuest — Módulo 4 (Timer / Pomodoro)",
+      "description": "Sequência: register (usuário A) -> register (usuário B, só pra testar 403) -> criar sessão -> tentar segunda sessão (409) -> active -> pause -> active -> resume -> active -> pause de outro usuário (403)"
+    },
+    {
+      "_id": "env_base_m4",
+      "_type": "environment",
+      "parentId": "wrk_studyquest_m4",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:7777",
+        "token": "",
+        "token_outro_usuario": "",
+        "subject_id": "",
+        "topic_id": "",
+        "session_id": ""
+      }
+    },
+    {
+      "_id": "req_1_register_a",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "1. POST /auth/register (usuário A — copie o token pra env.token)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Usuario A\",\n  \"email\": \"pomodoro-a@teste.com\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_1b_register_b",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "1b. POST /auth/register (usuário B — copie o token pra env.token_outro_usuario)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Usuario B\",\n  \"email\": \"pomodoro-b@teste.com\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -950
+    },
+    {
+      "_id": "req_2_p25_sem_duracao",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "2. POST /sessions com preset P25_5 sem duracaoAlvoMin (espera 422)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"{{ _.subject_id }}\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"tipo\": \"TEORIA\",\n  \"preset\": \"P25_5\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -900
+    },
+    {
+      "_id": "req_2b_subject_inexistente",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "2b. POST /sessions com subjectId inexistente (espera 404)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"00000000-0000-0000-0000-000000000000\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"tipo\": \"TEORIA\",\n  \"preset\": \"LIVRE\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -850
+    },
+    {
+      "_id": "req_3_iniciar",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "3. POST /sessions — inicia sessão P25_5 (copie o id pra env.session_id)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"{{ _.subject_id }}\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"tipo\": \"TEORIA\",\n  \"preset\": \"P25_5\",\n  \"duracaoAlvoMin\": 25\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_4_segunda_sessao",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "4. POST /sessions — segunda sessão com uma ativa (espera 409)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"{{ _.subject_id }}\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"tipo\": \"TEORIA\",\n  \"preset\": \"LIVRE\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_5_active",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "5. GET /sessions/active — sessão RUNNING com minutosAcumulados",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/sessions/active",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_6_pause",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "6. PATCH /sessions/:id/pause",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/sessions/{{ _.session_id }}/pause",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -500
+    },
+    {
+      "_id": "req_6b_pause_de_novo",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "6b. PATCH /sessions/:id/pause de novo, já PAUSED (espera 409)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/sessions/{{ _.session_id }}/pause",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -450
+    },
+    {
+      "_id": "req_7_active_paused",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "7. GET /sessions/active — status PAUSED, minutosAcumulados congelado",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/sessions/active",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -400
+    },
+    {
+      "_id": "req_8_pause_outro_usuario",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "8. PATCH /sessions/:id/resume com o token do usuário B (espera 403)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/sessions/{{ _.session_id }}/resume",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_outro_usuario }}" }],
+      "metaSortKey": -300
+    },
+    {
+      "_id": "req_8b_resume_inexistente",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "8b. PATCH /sessions/:id/resume com id inexistente (espera 404)",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/sessions/00000000-0000-0000-0000-000000000000/resume",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -250
+    },
+    {
+      "_id": "req_9_resume",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "9. PATCH /sessions/:id/resume — espere um pouco antes de rodar o passo 10",
+      "method": "PATCH",
+      "url": "{{ _.base_url }}/api/sessions/{{ _.session_id }}/resume",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -200
+    },
+    {
+      "_id": "req_10_active_final",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "10. GET /sessions/active — confere minutosAcumulados = pausa + tempo desde o resume",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/sessions/active",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_11_active_vazio",
+      "_type": "request",
+      "parentId": "wrk_studyquest_m4",
+      "name": "11. GET /sessions/active com o token do usuário B (espera 204, sem sessão)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/sessions/active",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token_outro_usuario }}" }],
+      "metaSortKey": 0
+    }
+  ]
+}
