@@ -13,7 +13,6 @@ export type CreateSessionInput = {
 export type SessionResponse = {
   id: string;
   startedAt: Date;
-  duracaoAlvoMin: number | null;
   preset: SessionPreset;
   tipo: SessionType;
   status: SessionStatus;
