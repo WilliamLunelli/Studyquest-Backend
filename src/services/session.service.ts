@@ -12,6 +12,7 @@ import { calculateAccumulatedMinutes } from "../utils/session.utils";
 function toSessionResponse(session: {
   id: string;
   startedAt: Date;
+  duracaoAlvoMin: number | null;
   preset: SessionPreset;
   type: string;
   status: string;
@@ -19,6 +20,7 @@ function toSessionResponse(session: {
   return {
     id: session.id,
     startedAt: session.startedAt,
+    duracaoAlvoMin: session.duracaoAlvoMin,
     preset: session.preset,
     tipo: session.type as SessionResponse["tipo"],
     status: session.status as SessionResponse["status"],
@@ -53,7 +55,10 @@ export async function startSession(
   // Validation (SessionPreset x duracaoAlvoMin) already enforced 25/50 for
   // the fixed presets; LIVRE ignores whatever came in the body and stores
   // null (module rule — no other module reads this value, it's just metadata).
-  const session = await sessionRepository.create(userId, input);
+  const targetDurationMin =
+    input.preset === SessionPreset.LIVRE ? null : input.duracaoAlvoMin!;
+
+  const session = await sessionRepository.create(userId, input, targetDurationMin);
 
   return toSessionResponse(session);
 }
