@@ -312,6 +312,111 @@ const options: swaggerJsdoc.Options = {
             estudandoAgora: { type: "integer", example: 47 },
           },
         },
+        CreateQuestionLogRequest: {
+          type: "object",
+          required: ["subjectId", "topicId", "feitas", "acertadas"],
+          properties: {
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            topicId: {
+              type: "string",
+              format: "uuid",
+              example: "33333333-3333-3333-3333-333333333333",
+            },
+            feitas: {
+              type: "integer",
+              minimum: 1,
+              maximum: 500,
+              example: 40,
+            },
+            acertadas: {
+              type: "integer",
+              minimum: 0,
+              example: 28,
+            },
+            sessionId: {
+              type: "string",
+              format: "uuid",
+              example: "66666666-6666-6666-6666-666666666666",
+            },
+            data: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-04T12:00:00.000Z",
+            },
+          },
+        },
+        CreateQuestionLogResponse: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "77777777-7777-7777-7777-777777777777",
+            },
+            percentualAcerto: { type: "integer", example: 70 },
+            xpGanho: { type: "integer", example: 15 },
+          },
+        },
+        QuestionLogItem: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "77777777-7777-7777-7777-777777777777",
+            },
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            materia: { type: "string", example: "Matematica" },
+            topicId: {
+              type: "string",
+              format: "uuid",
+              example: "33333333-3333-3333-3333-333333333333",
+            },
+            assunto: { type: "string", example: "Funcoes" },
+            feitas: { type: "integer", example: 40 },
+            acertadas: { type: "integer", example: 28 },
+            percentualAcerto: { type: "integer", example: 70 },
+            data: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-04T12:00:00.000Z",
+            },
+          },
+        },
+        QuestionLogListResponse: {
+          type: "object",
+          properties: {
+            items: {
+              type: "array",
+              items: { $ref: "#/components/schemas/QuestionLogItem" },
+            },
+            aggregate: {
+              type: "object",
+              properties: {
+                feitas: { type: "integer", example: 120 },
+                acertadas: { type: "integer", example: 84 },
+                percentualAcerto: { type: "integer", example: 70 },
+              },
+            },
+            pagination: {
+              type: "object",
+              properties: {
+                page: { type: "integer", example: 1 },
+                limit: { type: "integer", example: 20 },
+                total: { type: "integer", example: 3 },
+                totalPages: { type: "integer", example: 1 },
+              },
+            },
+          },
+        },
       },
     },
   },
