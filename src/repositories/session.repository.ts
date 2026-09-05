@@ -9,8 +9,12 @@ import { calculateAccumulatedMinutesAt } from "../utils/session.utils";
 import {
   calculateLevelFromXp,
   calculateSessionXp,
-  getReviewIntervalBySelfRating,
 } from "../utils/xp.utils";
+import {
+  addDays,
+  calculateNextReviewPlan,
+  startOfDay,
+} from "../utils/review.utils";
 
 const SESSION_SELECT = {
   id: true,
@@ -112,8 +116,8 @@ export const sessionRepository = {
     return prisma.$transaction(
       async (tx) => {
         const now = new Date();
-        const startOfDay = getStartOfDay(now);
-        const endOfDay = getEndOfDay(startOfDay);
+        const today = startOfDay(now);
+        const endOfDay = addDays(today, 1);
 
         const session = await tx.studySession.findUnique({
           where: { id: sessionId },
@@ -173,7 +177,7 @@ export const sessionRepository = {
             userId,
             status: "FINISHED",
             finishedAt: {
-              gte: startOfDay,
+              gte: today,
               lt: endOfDay,
             },
           },
@@ -197,7 +201,7 @@ export const sessionRepository = {
         const revisaoNoPrazo =
           session.type === SessionType.REVISAO &&
           session.originReview !== null &&
-          session.originReview.agendadaPara >= startOfDay &&
+          session.originReview.agendadaPara >= today &&
           session.originReview.agendadaPara < endOfDay;
         const multiplicador = !sessaoCurta && revisaoNoPrazo ? 2 : 1;
         const xpGanho = sessaoCurta
@@ -256,27 +260,6 @@ export const sessionRepository = {
           });
         }
 
-        const intervaloDias =
-          !sessaoCurta && session.topicId
-            ? getReviewIntervalBySelfRating(input.selfRating)
-            : null;
-
-        const proximaRevisao =
-          intervaloDias !== null && session.topicId
-            ? await tx.reviewSchedule.create({
-                data: {
-                  userId,
-                  topicId: session.topicId,
-                  agendadaPara: addDays(startOfDay, intervaloDias),
-                  repeticao: (session.originReview?.repeticao ?? 0) + 1,
-                },
-                select: {
-                  id: true,
-                  agendadaPara: true,
-                },
-              })
-            : null;
-
         if (!sessaoCurta && session.originReviewId) {
           await tx.reviewSchedule.updateMany({
             where: {
@@ -289,6 +272,59 @@ export const sessionRepository = {
             },
           });
         }
+
+        const nextReviewPlan =
+          !sessaoCurta && session.topicId
+            ? calculateNextReviewPlan({
+                selfRating: input.selfRating,
+                originReview: session.originReview,
+                referenceDate: now,
+              })
+            : null;
+
+        const existingPendingReview =
+          nextReviewPlan && session.topicId
+            ? await tx.reviewSchedule.findFirst({
+                where: {
+                  userId,
+                  topicId: session.topicId,
+                  status: "PENDENTE",
+                },
+                select: {
+                  id: true,
+                },
+              })
+            : null;
+
+        const proximaRevisao =
+          nextReviewPlan && session.topicId
+            ? existingPendingReview
+              ? await tx.reviewSchedule.update({
+                  where: {
+                    id: existingPendingReview.id,
+                  },
+                  data: {
+                    agendadaPara: addDays(today, nextReviewPlan.intervaloDias),
+                    repeticao: nextReviewPlan.repeticao,
+                  },
+                  select: {
+                    id: true,
+                    agendadaPara: true,
+                  },
+                })
+              : await tx.reviewSchedule.create({
+                  data: {
+                    userId,
+                    topicId: session.topicId,
+                    agendadaPara: addDays(today, nextReviewPlan.intervaloDias),
+                    repeticao: nextReviewPlan.repeticao,
+                  },
+                  select: {
+                    id: true,
+                    agendadaPara: true,
+                  },
+                })
+            : null;
 
         if (!sessaoCurta && session.cycleBlockId) {
           const cycle = await tx.studyCycle.findFirst({
@@ -379,7 +415,7 @@ export const sessionRepository = {
           proximaRevisao: {
             reviewId: proximaRevisao?.id ?? null,
             agendadaPara: proximaRevisao?.agendadaPara ?? null,
-            intervaloDias,
+            intervaloDias: nextReviewPlan?.intervaloDias ?? null,
           },
           proximoBloco: {
             blocoId: blocoAtual?.id ?? null,
@@ -395,21 +431,3 @@ export const sessionRepository = {
     );
   },
 };
-
-function getStartOfDay(date: Date) {
-  const start = new Date(date);
-  start.setHours(0, 0, 0, 0);
-  return start;
-}
-
-function getEndOfDay(startOfDay: Date) {
-  const end = new Date(startOfDay);
-  end.setDate(end.getDate() + 1);
-  return end;
-}
-
-function addDays(date: Date, days: number) {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}

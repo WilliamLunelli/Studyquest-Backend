@@ -417,6 +417,85 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        ReviewListItem: {
+          type: "object",
+          properties: {
+            reviewId: {
+              type: "string",
+              format: "uuid",
+              example: "55555555-5555-5555-5555-555555555555",
+            },
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            materia: { type: "string", example: "Matematica" },
+            topicId: {
+              type: "string",
+              format: "uuid",
+              example: "33333333-3333-3333-3333-333333333333",
+            },
+            assunto: { type: "string", example: "Funcoes" },
+            agendadaPara: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-04T12:00:00.000Z",
+            },
+            atrasadaEmDias: { type: "integer", example: 2 },
+            repeticao: { type: "integer", example: 2 },
+            multiplicadorXp: { type: "integer", enum: [1, 2], example: 1 },
+          },
+        },
+        ReviewDetailResponse: {
+          type: "object",
+          properties: {
+            reviewId: {
+              type: "string",
+              format: "uuid",
+              example: "55555555-5555-5555-5555-555555555555",
+            },
+            materia: { type: "string", example: "Matematica" },
+            assunto: { type: "string", example: "Funcoes" },
+            repeticao: { type: "integer", example: 2 },
+            roteiro: {
+              type: "object",
+              properties: {
+                aviso: {
+                  type: "string",
+                  example: "Nao abra o material ainda",
+                },
+                prompts: {
+                  type: "array",
+                  items: { type: "string" },
+                  example: [
+                    "Resolva um exemplo simples do assunto sem consultar o material.",
+                    "Explique quais formulas, propriedades ou passos voce precisou lembrar.",
+                    "Confira o material e marque exatamente onde travou ou errou.",
+                  ],
+                },
+              },
+            },
+            ultimaSessao: {
+              type: "object",
+              nullable: true,
+              properties: {
+                data: {
+                  type: "string",
+                  format: "date-time",
+                  example: "2026-09-04T12:00:00.000Z",
+                },
+                autoavaliacao: {
+                  type: "string",
+                  enum: ["TRAVEI", "OK", "TRANQUILO"],
+                  nullable: true,
+                  example: "OK",
+                },
+                minutos: { type: "integer", example: 45 },
+              },
+            },
+          },
+        },
       },
     },
   },
