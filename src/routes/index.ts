@@ -5,6 +5,7 @@ import Goalrouter from "./goal.routes";
 import Onboardingrouter from "./onboarding.routes";
 import StudyCyclerouter from "./cycle.routes";
 import SessionRouter from "./session.routes";
+import Homerouter from "./home.routes";
 
 const router = Router();
 
@@ -14,5 +15,6 @@ router.use("/goals", Goalrouter);
 router.use("/me", Onboardingrouter);
 router.use("/cycles", StudyCyclerouter);
 router.use("/sessions", SessionRouter);
+router.use("/home", Homerouter);
 
 export default router;
