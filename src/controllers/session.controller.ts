@@ -50,4 +50,20 @@ export const sessionController = {
       return handleControllerError(error, res);
     }
   },
+
+  async finish(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const session = await sessionService.finishSession(
+        req.userId!,
+        id,
+        req.body,
+      );
+
+      return res.status(200).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  },
 };

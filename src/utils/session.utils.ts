@@ -23,3 +23,17 @@ export function calculateAccumulatedMinutes(session: SessionTimeFields): number 
 
   return session.minutosAcumulados + elapsedMinutes;
 }
+
+export function calculateAccumulatedMinutesAt(
+  session: SessionTimeFields,
+  now: Date,
+): number {
+  if (session.status !== "RUNNING" || !session.resumedAt) {
+    return session.minutosAcumulados;
+  }
+
+  const elapsedMs = now.getTime() - session.resumedAt.getTime();
+  const elapsedMinutes = Math.floor(elapsedMs / 60000);
+
+  return session.minutosAcumulados + elapsedMinutes;
+}

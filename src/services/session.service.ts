@@ -1,8 +1,10 @@
 import { sessionRepository } from "../repositories/session.repository";
-import { SessionPreset } from "../generated/prisma/enums";
+import { SelfRating, SessionPreset } from "../generated/prisma/enums";
 import {
   ActiveSessionResponse,
   CreateSessionInput,
+  FinishSessionInput,
+  FinishSessionResponse,
   PauseResumeResponse,
   SessionResponse,
 } from "../types/session.types";
@@ -130,3 +132,53 @@ export async function resumeSession(
     minutosAcumulados: updated.minutosAcumulados,
   };
 }
+
+export async function finishSession(
+  userId: string,
+  sessionId: string,
+  input: FinishSessionInput,
+): Promise<FinishSessionResponse> {
+  if (!input.autoavaliacao) {
+    throw new AppError(422, "A autoavaliacao e obrigatoria.");
+  }
+
+  const result = await sessionRepository.finishWithEffects(userId, sessionId, {
+    selfRating: SELF_RATING_MAP[input.autoavaliacao],
+    notes: input.nota,
+  });
+
+  if (result === "NOT_FOUND") {
+    throw new AppError(404, "Sessao nao encontrada.");
+  }
+
+  if (result === "FORBIDDEN") {
+    throw new AppError(403, "Esta sessao pertence a outro usuario.");
+  }
+
+  if (result === "INVALID_STATUS") {
+    throw new AppError(
+      409,
+      "So e possivel encerrar uma sessao em andamento ou pausada.",
+    );
+  }
+
+  return {
+    sessao: {
+      id: result.sessao.id,
+      minutosTotais: result.sessao.minutosAcumulados,
+      tipo: result.sessao.type,
+      finishedAt: result.sessao.finishedAt!,
+    },
+    xp: result.xp,
+    streak: result.streak,
+    proximaRevisao: result.proximaRevisao,
+    proximoBloco: result.proximoBloco,
+  };
+}
+
+const SELF_RATING_MAP: Record<FinishSessionInput["autoavaliacao"], SelfRating> =
+  {
+    travei: SelfRating.TRAVEI,
+    ok: SelfRating.OK,
+    tranquilo: SelfRating.TRANQUILO,
+  };
