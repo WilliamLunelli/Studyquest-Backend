@@ -144,6 +144,174 @@ const options: swaggerJsdoc.Options = {
             senha: { type: "string", example: "senha123" },
           },
         },
+        CycleBlockResponse: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "11111111-1111-1111-1111-111111111111",
+            },
+            ordem: { type: "integer", example: 1 },
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            materia: { type: "string", example: "Matematica" },
+            topicId: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              example: "33333333-3333-3333-3333-333333333333",
+            },
+            assunto: { type: "string", nullable: true, example: "Funcoes" },
+            duracaoMin: { type: "integer", example: 50 },
+            status: {
+              type: "string",
+              enum: ["pendente", "concluido"],
+              example: "pendente",
+            },
+          },
+        },
+        StudyCycleResponse: {
+          type: "object",
+          properties: {
+            id: {
+              type: "string",
+              format: "uuid",
+              example: "44444444-4444-4444-4444-444444444444",
+            },
+            geradoEm: {
+              type: "string",
+              format: "date-time",
+              example: "2026-09-04T12:00:00.000Z",
+            },
+            posicaoAtual: { type: "integer", example: 0 },
+            blocos: {
+              type: "array",
+              items: { $ref: "#/components/schemas/CycleBlockResponse" },
+            },
+          },
+        },
+        UpdateCycleBlock: {
+          type: "object",
+          minProperties: 1,
+          properties: {
+            duracaoMin: {
+              type: "integer",
+              minimum: 25,
+              maximum: 60,
+              example: 45,
+            },
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            topicId: {
+              type: "string",
+              format: "uuid",
+              nullable: true,
+              example: "33333333-3333-3333-3333-333333333333",
+            },
+            ordem: { type: "integer", minimum: 1, example: 2 },
+          },
+        },
+        CompleteCycleBlockResponse: {
+          type: "object",
+          properties: {
+            bloco: { $ref: "#/components/schemas/CycleBlockResponse" },
+            xpGanho: { type: "integer", example: 200 },
+          },
+        },
+        CycleAlignmentItem: {
+          type: "object",
+          properties: {
+            subjectId: {
+              type: "string",
+              format: "uuid",
+              example: "22222222-2222-2222-2222-222222222222",
+            },
+            materia: { type: "string", example: "Matematica" },
+            peso: { type: "number", example: 5 },
+            minutosIdeaisSemana: { type: "integer", example: 240 },
+            minutosReaisSemana: { type: "integer", example: 180 },
+            desvioPercentual: { type: "integer", example: 75 },
+            status: {
+              type: "string",
+              enum: ["abaixo", "ok", "acima"],
+              example: "ok",
+            },
+          },
+        },
+        HomeResponse: {
+          type: "object",
+          properties: {
+            proximoBloco: {
+              type: "object",
+              properties: {
+                blocoId: {
+                  type: "string",
+                  format: "uuid",
+                  example: "11111111-1111-1111-1111-111111111111",
+                },
+                materia: { type: "string", example: "Matematica" },
+                assunto: { type: "string", nullable: true, example: "Funcoes" },
+                duracaoMin: { type: "integer", example: 50 },
+                tipoSugerido: {
+                  type: "string",
+                  enum: ["teoria", "questoes", "revisao"],
+                  example: "revisao",
+                },
+              },
+            },
+            revisoesHoje: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  reviewId: {
+                    type: "string",
+                    format: "uuid",
+                    example: "55555555-5555-5555-5555-555555555555",
+                  },
+                  materia: { type: "string", example: "Biologia" },
+                  assunto: { type: "string", example: "Citologia" },
+                  agendadaPara: {
+                    type: "string",
+                    format: "date-time",
+                    example: "2026-09-04T12:00:00.000Z",
+                  },
+                  multiplicadorXp: { type: "integer", enum: [1, 2], example: 2 },
+                  atrasada: { type: "boolean", example: false },
+                },
+              },
+            },
+            streak: {
+              type: "object",
+              properties: {
+                atual: { type: "integer", example: 4 },
+                recorde: { type: "integer", example: 12 },
+                escudosDisponiveis: { type: "integer", example: 1 },
+                metaDiariaMin: { type: "integer", example: 60 },
+                minutosHoje: { type: "integer", example: 47 },
+                metaCumprida: { type: "boolean", example: false },
+              },
+            },
+            xp: {
+              type: "object",
+              properties: {
+                total: { type: "integer", example: 1250 },
+                nivel: { type: "integer", example: 5 },
+                titulo: { type: "string", example: "Aprendiz" },
+                xpNoNivel: { type: "integer", example: 150 },
+                xpParaProximoNivel: { type: "integer", example: 350 },
+              },
+            },
+            estudandoAgora: { type: "integer", example: 47 },
+          },
+        },
       },
     },
   },
