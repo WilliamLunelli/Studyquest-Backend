@@ -496,6 +496,75 @@ const options: swaggerJsdoc.Options = {
             },
           },
         },
+        DashboardResponse: {
+          type: "object",
+          properties: {
+            cobertura: {
+              type: "object",
+              properties: {
+                assuntosTotais: { type: "integer", example: 120 },
+                assuntosVistos: { type: "integer", example: 45 },
+                percentual: { type: "integer", example: 38 },
+              },
+            },
+            horasPorMateria: {
+              type: "array",
+              items: { $ref: "#/components/schemas/CycleAlignmentItem" },
+            },
+            acertoPorAssunto: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  topicId: {
+                    type: "string",
+                    format: "uuid",
+                    example: "33333333-3333-3333-3333-333333333333",
+                  },
+                  assunto: { type: "string", example: "Funcoes" },
+                  materia: { type: "string", example: "Matematica" },
+                  feitas: { type: "integer", example: 40 },
+                  acertadas: { type: "integer", example: 18 },
+                  percentual: { type: "integer", example: 45 },
+                },
+              },
+            },
+            excessoConfianca: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  topicId: {
+                    type: "string",
+                    format: "uuid",
+                    example: "33333333-3333-3333-3333-333333333333",
+                  },
+                  assunto: { type: "string", example: "Funcoes" },
+                  materia: { type: "string", example: "Matematica" },
+                  autoavaliacoesTranquilo: { type: "integer", example: 4 },
+                  percentualAcerto: { type: "integer", example: 47 },
+                  revisaoAntecipada: { type: "boolean", example: true },
+                },
+              },
+            },
+            streak: {
+              type: "object",
+              properties: {
+                atual: { type: "integer", example: 4 },
+                recorde: { type: "integer", example: 12 },
+                escudosDisponiveis: { type: "integer", example: 1 },
+              },
+            },
+            aderenciaCiclo: {
+              type: "object",
+              properties: {
+                blocosPlanejados: { type: "integer", example: 20 },
+                blocosConcluidos: { type: "integer", example: 14 },
+                percentual: { type: "integer", example: 70 },
+              },
+            },
+          },
+        },
       },
     },
   },
