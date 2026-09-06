@@ -1,7 +1,8 @@
 import { homeRepository } from "../repositories/home.repository";
+import { streakShieldRepository } from "../repositories/streak-shield.repository";
 import { HomeResponse } from "../types/home.types";
 import { AppError } from "../utils/app-error";
-import { getLevelTitle, getXpProgress } from "../utils/home.utils";
+import { calcularNivel } from "../utils/level.utils";
 import { checkOnboardingStatus } from "./user.service";
 
 export async function getHome(userId: string): Promise<HomeResponse> {
@@ -31,7 +32,7 @@ export async function getHome(userId: string): Promise<HomeResponse> {
     homeRepository.findActiveCycleWithBlocks(userId),
     homeRepository.findPendingReviewsUntil(userId, fimDoDia),
     homeRepository.sumFinishedMinutesToday(userId, inicioDoDia, fimDoDia),
-    homeRepository.countAvailableShields(
+    streakShieldRepository.getDisponiveis(
       userId,
       hoje.getMonth() + 1,
       hoje.getFullYear(),
@@ -95,14 +96,14 @@ export async function getHome(userId: string): Promise<HomeResponse> {
     metaCumprida: minutosHoje >= metaDiariaMin,
   };
 
-  const xpProgress = getXpProgress(user.xpTotal, user.level);
+  const nivelInfo = calcularNivel(user.xpTotal);
 
   const xp = {
     total: user.xpTotal,
-    nivel: user.level,
-    titulo: getLevelTitle(user.level),
-    xpNoNivel: xpProgress.xpNoNivel,
-    xpParaProximoNivel: xpProgress.xpParaProximoNivel,
+    nivel: nivelInfo.nivel,
+    titulo: nivelInfo.titulo,
+    xpNoNivel: nivelInfo.xpNoNivel,
+    xpParaProximoNivel: nivelInfo.xpParaProximo,
   };
 
   return {

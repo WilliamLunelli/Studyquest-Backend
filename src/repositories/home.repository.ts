@@ -7,7 +7,6 @@ export const homeRepository = {
       select: {
         id: true,
         xpTotal: true,
-        level: true,
         streakAtual: true,
         streakRecorde: true,
         availabilities: {
@@ -99,17 +98,6 @@ export const homeRepository = {
       },
       _sum: {
         minutosAcumulados: true,
-      },
-    });
-  },
-
-  countAvailableShields(userId: string, mes: number, ano: number) {
-    return prisma.streakShield.count({
-      where: {
-        userId,
-        mes,
-        ano,
-        usado: false,
       },
     });
   },

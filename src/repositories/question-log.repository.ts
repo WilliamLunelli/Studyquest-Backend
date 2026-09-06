@@ -104,6 +104,21 @@ export const questionLogRepository = {
           },
         });
 
+        // Histórico completo do assunto ANTES deste registro — usado
+        // pelo bônus de melhoria de acerto (comparação antes/depois).
+        // Precisa ser lido antes do create abaixo, senão "antes" já
+        // incluiria o próprio registro que está sendo criado agora.
+        const agregadoAntes = await tx.questionLog.aggregate({
+          where: {
+            userId: params.userId,
+            topicId: params.data.topicId,
+          },
+          _sum: {
+            feitas: true,
+            acertadas: true,
+          },
+        });
+
         const log = await tx.questionLog.create({
           data: {
             userId: params.userId,
@@ -114,6 +129,15 @@ export const questionLogRepository = {
           },
           select: QUESTION_LOG_SELECT,
         });
+
+        const antes = {
+          feitas: agregadoAntes._sum.feitas ?? 0,
+          acertadas: agregadoAntes._sum.acertadas ?? 0,
+        };
+        const depois = {
+          feitas: antes.feitas + params.data.feitas,
+          acertadas: antes.acertadas + params.data.acertadas,
+        };
 
         const xpGanho = previousLogsToday === 0 ? params.grantXp : 0;
 
@@ -157,6 +181,8 @@ export const questionLogRepository = {
         return {
           log,
           xpGanho,
+          antes,
+          depois,
         };
       },
       {

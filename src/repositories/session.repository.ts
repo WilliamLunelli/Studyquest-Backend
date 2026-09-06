@@ -1,15 +1,14 @@
 import prisma from "../config/database";
 import { Prisma } from "../generated/prisma/client";
 import { SessionType } from "../generated/prisma/enums";
+import { studyCycleRepository } from "./study-cycle.repository";
+import { xpEventRepository } from "./xp-event.repository";
 import {
   CreateSessionInput,
   FinishSessionRepositoryInput,
 } from "../types/session.types";
 import { calculateAccumulatedMinutesAt } from "../utils/session.utils";
-import {
-  calculateLevelFromXp,
-  calculateSessionXp,
-} from "../utils/xp.utils";
+import { calculateSessionXp } from "../utils/xp.utils";
 import {
   addDays,
   calculateNextReviewPlan,
@@ -33,6 +32,33 @@ const SESSION_SELECT = {
 };
 
 export const sessionRepository = {
+  // Usado pela avaliação retroativa de streak (gamification.service)
+  // para achar o último dia com estudo real. IMPORTANTE: dentro do
+  // finish, isto é chamado ANTES de fechar a sessão atual (por isso
+  // ainda enxerga status RUNNING/PAUSED nela) — o `excludeSessionId`
+  // é só um cinto-e-suspensório caso a ordem mude no futuro: sem os
+  // dois, a sessão que está sendo finalizada agora viraria o próprio
+  // "último dia estudado", a lacuna desapareceria e dias falhados
+  // sumiriam silenciosamente da varredura.
+  async findLastStudiedDay(
+    userId: string,
+    excludeSessionId?: string,
+    client: Prisma.TransactionClient = prisma,
+  ) {
+    const last = await client.studySession.findFirst({
+      where: {
+        userId,
+        status: "FINISHED",
+        studiedAt: { not: null },
+        id: excludeSessionId ? { not: excludeSessionId } : undefined,
+      },
+      orderBy: { studiedAt: "desc" },
+      select: { studiedAt: true },
+    });
+
+    return last?.studiedAt ?? null;
+  },
+
   findActiveByUserId(userId: string) {
     return prisma.studySession.findFirst({
       where: { userId, status: { in: ["RUNNING", "PAUSED"] } },
@@ -212,9 +238,14 @@ export const sessionRepository = {
               multiplicador,
             );
 
+        // streakAtual/streakRecorde já vêm resolvidos: session.service.ts
+        // chama avaliarStreakRetroativo (que quita qualquer lacuna passada
+        // com escudo, ou zera o streak) ANTES de chamar finishWithEffects,
+        // numa transação própria que já commitou. O que falta aqui é só a
+        // decisão de HOJE (bateu a meta pela primeira vez no dia ou não).
         const nivelAnterior = session.user.level;
-        const xpTotal = session.user.xpTotal + xpGanho;
-        const nivelAtual = Math.max(nivelAnterior, calculateLevelFromXp(xpTotal));
+        let xpTotal = session.user.xpTotal;
+        let nivelAtual = nivelAnterior;
         const streakAtual = deveIncrementarStreak
           ? session.user.streakAtual + 1
           : session.user.streakAtual;
@@ -240,25 +271,22 @@ export const sessionRepository = {
           },
         });
 
+        if (xpGanho > 0) {
+          const resultadoXp = await xpEventRepository.grantWithClient(
+            tx,
+            userId,
+            xpGanho,
+            "Sessão de estudo concluída",
+          );
+
+          xpTotal = resultadoXp.xpTotal;
+          nivelAtual = resultadoXp.nivelAtual;
+        }
+
         await tx.user.update({
           where: { id: userId },
-          data: {
-            xpTotal,
-            level: nivelAtual,
-            streakAtual,
-            streakRecorde,
-          },
+          data: { streakAtual, streakRecorde },
         });
-
-        if (xpGanho > 0) {
-          await tx.xpEvent.create({
-            data: {
-              userId,
-              quantidade: xpGanho,
-              motivo: "Sessao de estudo concluida",
-            },
-          });
-        }
 
         if (!sessaoCurta && session.originReviewId) {
           await tx.reviewSchedule.updateMany({
@@ -327,38 +355,7 @@ export const sessionRepository = {
             : null;
 
         if (!sessaoCurta && session.cycleBlockId) {
-          const cycle = await tx.studyCycle.findFirst({
-            where: {
-              userId,
-              ativo: true,
-              blocks: {
-                some: {
-                  id: session.cycleBlockId,
-                },
-              },
-            },
-            select: {
-              id: true,
-              posicaoAtual: true,
-              blocks: {
-                orderBy: {
-                  ordem: "asc",
-                },
-                select: {
-                  id: true,
-                },
-              },
-            },
-          });
-
-          if (cycle && cycle.blocks.length > 0) {
-            await tx.studyCycle.update({
-              where: { id: cycle.id },
-              data: {
-                posicaoAtual: (cycle.posicaoAtual + 1) % cycle.blocks.length,
-              },
-            });
-          }
+          await studyCycleRepository.advanceOnBlockFinish(tx, session.cycleBlockId);
         }
 
         const activeCycle = await tx.studyCycle.findFirst({
@@ -407,10 +404,10 @@ export const sessionRepository = {
           streak: {
             atual: streakAtual,
             metaCumprida,
-            // TODO: implementar consumo real de escudo quando a regra de falha
-            // diaria/streak estiver estruturada. Hoje o finish apenas informa
-            // false porque esta transacao nao calcula quebra de streak anterior.
-            escudoUsado: false,
+            // escudoUsado real (se algum escudo foi consumido na
+            // varredura retroativa desta chamada) vem de fora — ver
+            // session.service.ts::finishSession, que chama
+            // avaliarStreakRetroativo antes disto e mescla o resultado.
           },
           proximaRevisao: {
             reviewId: proximaRevisao?.id ?? null,

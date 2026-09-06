@@ -55,6 +55,16 @@
 
 ---
 
+## Comentários no código
+
+- Comentários explicam o código, não a conversa que levou a ele
+- Nunca referencie "o enunciado", "a spec", "você pediu", "conforme
+  combinado" ou decisões tomadas em chat
+- Comente o POR QUÊ quando não for óbvio; não comente o O QUÊ
+- Não deixe comentário narrando correção de erro já corrigido
+
+---
+
 # StudyQuest — Documentação Técnica
 
 ## O que é o produto
@@ -358,6 +368,7 @@ Seguintes, quando concluídas no prazo: `7 → 15 → 30 → 60` dias
 - Autoavaliação `TRAVEI` na revisão: intervalo **regride um passo**
 - `QuestionLog` com acerto <50%: antecipa para o dia seguinte
 - Atraso superior a 30 dias: revisão arquivada, assunto volta ao ciclo como conteúdo novo
+  - "Volta ao ciclo" é implícito, não automático: arquivar só muda o `status` da revisão para `ARQUIVADA`, não recria nenhum `CycleBlock`. O assunto só reaparece de fato na próxima vez que `POST /cycles/generate` rodar (ele não é excluído do pool a menos que esteja em `CompletedTopic`).
 
 ### Streak
 

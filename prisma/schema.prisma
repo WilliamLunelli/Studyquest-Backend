@@ -40,15 +40,17 @@ model User {
   goalId String?
   goal   Goal?   @relation(fields: [goalId], references: [id])
 
-  userBadges     UserBadge[]
-  sessions       StudySession[]
-  difficulties   UserDifficulty[]
-  availabilities UserAvailability[]
-  studyCycles    StudyCycle[]
-  reviews        ReviewSchedule[]
-  questionLogs   QuestionLog[]
-  xpEvents       XpEvent[]
-  streakShields  StreakShield[]
+  userBadges      UserBadge[]
+  sessions        StudySession[]
+  difficulties    UserDifficulty[]
+  availabilities  UserAvailability[]
+  studyCycles     StudyCycle[]
+  reviews         ReviewSchedule[]
+  questionLogs    QuestionLog[]
+  xpEvents        XpEvent[]
+  streakShields   StreakShield[]
+  completedTopics CompletedTopic[]
+  improvedTopics  ImprovedTopic[]
 
   @@map("users")
 }
@@ -120,10 +122,12 @@ model Topic {
   subjectId String
   subject   Subject @relation(fields: [subjectId], references: [id])
 
-  cycleBlocks   CycleBlock[]
-  studySessions StudySession[]
-  reviews       ReviewSchedule[]
-  questionLogs  QuestionLog[]
+  cycleBlocks      CycleBlock[]
+  studySessions    StudySession[]
+  reviews          ReviewSchedule[]
+  questionLogs     QuestionLog[]
+  completedByUsers CompletedTopic[]
+  improvedByUsers  ImprovedTopic[]
 
   @@map("topics")
 }
@@ -167,10 +171,16 @@ model UserAvailability {
 // ---------------------------------------------------------------------------
 
 model StudyCycle {
-  id           String   @id @default(uuid())
-  posicaoAtual Int      @default(0)
-  ativo        Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id           String @id @default(uuid())
+  posicaoAtual Int    @default(0)
+
+  /// Quantas voltas completas o ciclo já deu (posicaoAtual voltou a 0).
+  /// CycleBlock.status é execução da volta atual, não conhecimento
+  /// permanente — sem contar a volta, não dá pra saber se "não cumpriu
+  /// esta volta" ou "está na volta 3" só olhando os blocos.
+  voltasCompletas Int      @default(0)
+  ativo           Boolean  @default(true)
+  createdAt       DateTime @default(now())
 
   userId String
   user   User   @relation(fields: [userId], references: [id])
@@ -199,6 +209,26 @@ model CycleBlock {
 
   @@index([cycleId, ordem])
   @@map("cycle_blocks")
+}
+
+/// Assunto (Topic) que o usuário marcou como dominado via
+/// POST /cycles/blocks/:id/complete. Independente de CycleBlock: um
+/// CycleBlock é só uma fatia de tempo de uma rotação do ciclo (pode
+/// virar CONCLUIDO só por ter sido executada, sem o usuário ter
+/// dominado o assunto) — isto aqui é o fato "usuário X sabe o
+/// assunto Y", usado para tirar o assunto do pool da próxima geração.
+model CompletedTopic {
+  id          String   @id @default(uuid())
+  concluidoEm DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  @@unique([userId, topicId])
+  @@map("completed_topics")
 }
 
 // ---------------------------------------------------------------------------
@@ -304,10 +334,14 @@ model XpEvent {
 }
 
 model StreakShield {
-  id        String    @id @default(uuid())
-  mes       Int
-  ano       Int
-  usado     Boolean   @default(false)
+  id  String @id @default(uuid())
+  mes Int
+  ano Int
+
+  /// Quantos dos 2 escudos do mês já foram consumidos (0-2). Uma linha
+  /// por (userId, mes, ano) representa o orçamento inteiro do mês, não
+  /// um escudo individual — por isso é contador, não boolean.
+  usados    Int       @default(0)
   usadoEm   DateTime?
   createdAt DateTime  @default(now())
 
@@ -316,6 +350,23 @@ model StreakShield {
 
   @@unique([userId, mes, ano])
   @@map("streak_shields")
+}
+
+/// Assunto (Topic) que já rendeu o bônus de melhoria de acerto (+300,
+/// acerto saiu de <50% para >70%). Marca a concessão pra sempre, uma
+/// vez por assunto: se o usuário cair e subir de novo, não paga de novo.
+model ImprovedTopic {
+  id          String   @id @default(uuid())
+  melhoradoEm DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  topicId String
+  topic   Topic  @relation(fields: [topicId], references: [id])
+
+  @@unique([userId, topicId])
+  @@map("improved_topics")
 }
 
 // ---------------------------------------------------------------------------
