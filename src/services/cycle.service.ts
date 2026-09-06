@@ -1,4 +1,5 @@
 import { studyCycleRepository } from "../repositories/study-cycle.repository";
+import { completedTopicRepository } from "../repositories/completed-topic.repository";
 import {
   CompleteCycleResponse,
   CreateCycleBlockInput,
@@ -10,14 +11,15 @@ import {
 } from "../types/cycle.types";
 import { AppError } from "../utils/app-error";
 import { fatiarEmBlocos, intercalarBlocos } from "../utils/cycle";
+import {
+  DIFICULDADE_NEUTRA,
+  ajustarScoresSemInverterPesos,
+  calcularScoreMateria,
+  classificarAderencia,
+} from "../utils/cycle-score.utils";
+import { calcularBonusAssuntoConcluido } from "../utils/xp.utils";
+import { concederBonusAssuntoConcluido } from "./gamification.service";
 import { checkOnboardingStatus } from "./user.service";
-
-type ScoreItem = {
-  subjectId: string;
-  materia: string;
-  peso: number;
-  score: number;
-};
 
 export async function createCycle(
   userId: string,
@@ -44,9 +46,9 @@ export async function createCycle(
         return item.subjectId === subject.id;
       });
 
-      const dificuldade = diffculty?.dificuldade ?? 3;
+      const dificuldade = diffculty?.dificuldade ?? DIFICULDADE_NEUTRA;
 
-      const score = weight.peso * (1 + (dificuldade - 3) * 0.15);
+      const score = calcularScoreMateria(weight.peso, dificuldade);
 
       return {
         subjectId: subject.id,
@@ -79,13 +81,9 @@ export async function createCycle(
   });
 
   const completedTopicIds = new Set(
-    (await studyCycleRepository.getCompletedTopicIdsByUser(userId))
-      .map((item) => {
-        return item.topicId;
-      })
-      .filter((topicId): topicId is string => {
-        return topicId !== null;
-      }),
+    (await completedTopicRepository.listTopicIdsByUser(userId)).map((item) => {
+      return item.topicId;
+    }),
   );
 
   let blocks: CreateCycleBlockInput[] = [];
@@ -207,13 +205,28 @@ export async function completeBlock(
   userId: string,
   blockId: string,
 ): Promise<CompleteCycleResponse> {
-  const result = await studyCycleRepository.completeBlock(userId, blockId);
+  const bloco = await studyCycleRepository.findOwnedBlockWithTopic(userId, blockId);
 
-  if (!result) {
+  if (!bloco) {
     throw new AppError(404, "Bloco do ciclo não encontrado.");
   }
 
-  const { bloco, xpGanho } = result;
+  if (!bloco.topicId) {
+    throw new AppError(422, "Este bloco não tem assunto associado para concluir.");
+  }
+
+  const jaConcluido = await completedTopicRepository.findByUserAndTopic(
+    userId,
+    bloco.topicId,
+  );
+
+  let xpGanho = 0;
+
+  if (!jaConcluido) {
+    await completedTopicRepository.create(userId, bloco.topicId);
+    await concederBonusAssuntoConcluido(userId);
+    xpGanho = calcularBonusAssuntoConcluido();
+  }
 
   return {
     bloco: {
@@ -261,9 +274,9 @@ export async function getCycleAlignment(
         return item.subjectId === subject.id;
       });
 
-      const dificuldade = difficulty?.dificuldade ?? 3;
+      const dificuldade = difficulty?.dificuldade ?? DIFICULDADE_NEUTRA;
 
-      const score = weight.peso * (1 + (dificuldade - 3) * 0.15);
+      const score = calcularScoreMateria(weight.peso, dificuldade);
 
       return {
         subjectId: subject.id,
@@ -304,12 +317,7 @@ export async function getCycleAlignment(
         ? 0
         : Math.round((minutosReaisSemana / minutosIdeaisSemana) * 100);
 
-    const status =
-      minutosReaisSemana < minutosIdeaisSemana * 0.7
-        ? "abaixo"
-        : minutosReaisSemana > minutosIdeaisSemana * 1.3
-          ? "acima"
-          : "ok";
+    const status = classificarAderencia(minutosIdeaisSemana, minutosReaisSemana);
 
     return {
       subjectId: item.subjectId,
@@ -321,50 +329,4 @@ export async function getCycleAlignment(
       status,
     };
   });
-}
-
-function ajustarScoresSemInverterPesos(scores: ScoreItem[]) {
-  const scoreAjustadoPorMateria = new Map<string, number>();
-  const scoresPorPeso = [...scores].sort((a, b) => {
-    return b.peso - a.peso;
-  });
-  let menorScorePesoMaior = Infinity;
-
-  for (let index = 0; index < scoresPorPeso.length; ) {
-    const primeiroItemDoGrupo = scoresPorPeso[index];
-
-    if (!primeiroItemDoGrupo) {
-      break;
-    }
-
-    const pesoAtual = primeiroItemDoGrupo.peso;
-    const grupoMesmoPeso: ScoreItem[] = [];
-
-    while (index < scoresPorPeso.length) {
-      const item = scoresPorPeso[index];
-
-      if (!item || item.peso !== pesoAtual) {
-        break;
-      }
-
-      grupoMesmoPeso.push(item);
-      index++;
-    }
-
-    grupoMesmoPeso.forEach((item) => {
-      scoreAjustadoPorMateria.set(
-        item.subjectId,
-        Math.min(item.score, menorScorePesoMaior),
-      );
-    });
-
-    menorScorePesoMaior = Math.min(
-      menorScorePesoMaior,
-      ...grupoMesmoPeso.map((item) => {
-        return scoreAjustadoPorMateria.get(item.subjectId) ?? item.score;
-      }),
-    );
-  }
-
-  return scoreAjustadoPorMateria;
 }

@@ -1,4 +1,7 @@
 import prisma from "../config/database";
+import { Prisma } from "../generated/prisma/client";
+
+type Client = Prisma.TransactionClient;
 
 export const userRepository = {
   findByEmail(email: string) {
@@ -42,5 +45,36 @@ export const userRepository = {
 
   countAvailabilityDays(userId: string) {
     return prisma.userAvailability.count({ where: { userId } });
+  },
+
+  // Usado pela avaliação retroativa de streak (gamification.service):
+  // precisa de quando a conta foi criada (piso da varredura quando o
+  // usuário nunca estudou) e da meta de minutos por dia da semana.
+  // Aceita `client` pra rodar dentro da transação do finish em vez de
+  // abrir uma consulta solta fora dela.
+  findForStreakEvaluation(userId: string, client: Client = prisma) {
+    return client.user.findUnique({
+      where: { id: userId },
+      select: {
+        createdAt: true,
+        streakAtual: true,
+        streakRecorde: true,
+        availabilities: {
+          select: { diaSemana: true, minutos: true },
+        },
+      },
+    });
+  },
+
+  updateStreak(
+    userId: string,
+    data: { streakAtual: number; streakRecorde: number },
+    client: Client = prisma,
+  ) {
+    return client.user.update({
+      where: { id: userId },
+      data,
+      select: { streakAtual: true, streakRecorde: true },
+    });
   },
 };

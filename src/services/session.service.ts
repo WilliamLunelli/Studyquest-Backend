@@ -1,4 +1,5 @@
 import { sessionRepository } from "../repositories/session.repository";
+import { avaliarStreakRetroativo } from "./gamification.service";
 import { SelfRating, SessionPreset } from "../generated/prisma/enums";
 import {
   ActiveSessionResponse,
@@ -142,6 +143,18 @@ export async function finishSession(
     throw new AppError(422, "A autoavaliacao e obrigatoria.");
   }
 
+  // Quita qualquer lacuna de dias passados (com escudo ou zerando o
+  // streak) ANTES do finish decidir o resultado de hoje — em uma
+  // transação própria, já commitada quando finishWithEffects abre a
+  // dela. Ordem importa: precisa rodar enquanto esta sessão ainda não
+  // virou FINISHED (ver comentário em
+  // session.repository.ts::findLastStudiedDay).
+  const resultadoStreakRetroativo = await avaliarStreakRetroativo(
+    userId,
+    new Date(),
+    sessionId,
+  );
+
   const result = await sessionRepository.finishWithEffects(userId, sessionId, {
     selfRating: SELF_RATING_MAP[input.autoavaliacao],
     notes: input.nota,
@@ -170,7 +183,10 @@ export async function finishSession(
       finishedAt: result.sessao.finishedAt!,
     },
     xp: result.xp,
-    streak: result.streak,
+    streak: {
+      ...result.streak,
+      escudoUsado: resultadoStreakRetroativo.escudosConsumidos > 0,
+    },
     proximaRevisao: result.proximaRevisao,
     proximoBloco: result.proximoBloco,
   };

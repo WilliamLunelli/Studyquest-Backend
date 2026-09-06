@@ -1,4 +1,5 @@
 import { questionLogRepository } from "../repositories/question-log.repository";
+import { concederBonusMelhoriaAcerto } from "./gamification.service";
 import {
   CreateQuestionLogInput,
   CreateQuestionLogResponse,
@@ -69,10 +70,36 @@ export async function createQuestionLog(
     reviewDate,
   });
 
+  // Transação própria, separada da criação do QuestionLog acima:
+  // repository não importa service, então a concessão deste bônus não
+  // pode rodar dentro da transação de createWithEffects. Se falhar, o
+  // QuestionLog e o +15 já estão salvos — só o +300 se perde, por isso
+  // o log de erro abaixo é o único jeito de reconstituir o que
+  // aconteceu depois.
+  let bonusMelhoriaAcerto = 0;
+
+  try {
+    const resultadoBonus = await concederBonusMelhoriaAcerto(
+      userId,
+      input.topicId,
+      result.antes,
+      result.depois,
+    );
+
+    bonusMelhoriaAcerto = resultadoBonus.xp;
+  } catch (error) {
+    console.error(
+      `[gamification] Falha ao conceder bonus de melhoria de acerto (+300) ` +
+        `para userId=${userId} topicId=${input.topicId}. O QuestionLog ` +
+        `${result.log.id} ja foi salvo; o bonus NAO foi concedido.`,
+      error,
+    );
+  }
+
   return {
     id: result.log.id,
     percentualAcerto,
-    xpGanho: result.xpGanho,
+    xpGanho: result.xpGanho + bonusMelhoriaAcerto,
   };
 }
 

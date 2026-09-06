@@ -30,14 +30,16 @@ export async function setGoal(
 
   await userRepository.setGoal(userId, goalId);
 
-  // Efeito colateral pedido pela spec: dificuldade zerada para toda
-  // matéria do objetivo, pra o usuário avaliar depois em PUT /me/difficulties.
+  // Zera a dificuldade de cada matéria do objetivo (0 = "não
+  // respondido") pra o usuário avaliar depois em PUT /me/difficulties.
   if (subjectIds.length > 0) {
     await userDifficultyRepository.createManyZeroed(userId, subjectIds);
   }
 
-  // Trocar de objetivo invalida o ciclo atual (regra do CLAUDE.md) —
-  // só desativa; gerar um novo é o bloco B.
+  // O ciclo é montado em cima do peso de área do objetivo (Goal ->
+  // GoalWeight -> Area -> Subject): trocar de objetivo invalida
+  // qualquer ciclo baseado no peso antigo. Só desativa aqui — quem
+  // gera o próximo é POST /cycles/generate.
   await studyCycleRepository.invalidateActiveCycle(userId);
 
   return {

@@ -144,9 +144,9 @@ router.patch("/:id/resume", authMiddleware, sessionController.resume);
  * /api/sessions/{id}/finish:
  *   post:
  *     tags:
- *       - SessÃ£o
- *     summary: Encerra uma sessÃ£o e aplica seus efeitos
- *     description: Fecha a sessÃ£o em uma Ãºnica transaÃ§Ã£o, calculando XP, nÃ­vel, streak, revisÃ£o e avanÃ§o do ciclo.
+ *       - Sessão
+ *     summary: Encerra uma sessão e aplica seus efeitos
+ *     description: Fecha a sessão em uma única transação, calculando XP, nível, streak, revisão e avanço do ciclo.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -172,17 +172,17 @@ router.patch("/:id/resume", authMiddleware, sessionController.resume);
  *                 maxLength: 1000
  *     responses:
  *       200:
- *         description: SessÃ£o encerrada com sucesso
+ *         description: Sessão encerrada com sucesso
  *       401:
- *         description: Token nÃ£o fornecido ou invÃ¡lido
+ *         description: Token não fornecido ou inválido
  *       403:
- *         description: SessÃ£o pertence a outro usuÃ¡rio
+ *         description: Sessão pertence a outro usuário
  *       404:
- *         description: SessÃ£o nÃ£o encontrada
+ *         description: Sessão não encontrada
  *       409:
- *         description: SessÃ£o nÃ£o estÃ¡ running ou paused
+ *         description: Sessão não está running ou paused
  *       422:
- *         description: AutoavaliaÃ§Ã£o ausente ou nota invÃ¡lida
+ *         description: Autoavaliação ausente ou nota inválida
  *       500:
  *         description: Erro interno
  */
