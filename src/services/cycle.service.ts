@@ -18,6 +18,7 @@ import {
   classificarAderencia,
 } from "../utils/cycle-score.utils";
 import { calcularBonusAssuntoConcluido } from "../utils/xp.utils";
+import { calcularDiasEfetivos } from "../utils/dashboard.utils";
 import { concederBonusAssuntoConcluido } from "./gamification.service";
 import { checkOnboardingStatus } from "./user.service";
 
@@ -243,8 +244,18 @@ export async function completeBlock(
   };
 }
 
+/**
+ * `periodoDias`: sem ele, comportamento original (ideal e real da semana
+ * civil atual — usado por GET /cycles/alignment). Com ele, escala o
+ * minutosIdeaisSemana proporcionalmente (periodoDias/7) e busca o real
+ * numa janela explícita dos últimos `periodoDias` dias — usado pelo
+ * dashboard para os períodos 7d/30d/90d. Os nomes dos campos continuam
+ * "...Semana" mesmo fora do caso semanal, para reaproveitar o mesmo
+ * CycleAlignmentItem nos dois endpoints em vez de duplicar o tipo.
+ */
 export async function getCycleAlignment(
   userId: string,
+  periodoDias?: number,
 ): Promise<CycleAlignmentResponse> {
   const onboardingCompleto = await checkOnboardingStatus(userId);
 
@@ -267,6 +278,21 @@ export async function getCycleAlignment(
   const totalMinutosSemana = userData.availabilities.reduce((total, item) => {
     return total + item.minutos;
   }, 0);
+
+  // Clampa pelos dias que a conta de fato existe: sem isso, uma conta
+  // de 20 dias consultada com periodo=90d compara o real (só podia ter
+  // 20 dias de dado) contra um ideal de 90 dias inteiros — sai "abaixo"
+  // mesmo cumprindo a meta todo dia desde que a conta existe. Ver
+  // calcularDiasEfetivos em dashboard.utils.ts.
+  const diasEfetivos = periodoDias
+    ? calcularDiasEfetivos(periodoDias, userData.createdAt)
+    : undefined;
+
+  const totalMinutosPeriodo = periodoDias
+    ? Math.round(totalMinutosSemana * ((diasEfetivos ?? periodoDias) / 7))
+    : totalMinutosSemana;
+
+  const range = periodoDias ? buildPeriodoRange(periodoDias) : undefined;
 
   const scores = userData.goal.weights.flatMap((weight) => {
     return weight.area.subjects.map((subject) => {
@@ -294,7 +320,7 @@ export async function getCycleAlignment(
   }, 0);
 
   const minutosReais =
-    await studyCycleRepository.getFinishedMinutesBySubject(userId);
+    await studyCycleRepository.getFinishedMinutesBySubject(userId, range);
 
   const minutosReaisPorMateria = new Map(
     minutosReais.map((item) => {
@@ -307,7 +333,7 @@ export async function getCycleAlignment(
       scoreAjustadoPorMateria.get(item.subjectId) ?? item.score;
 
     const minutosIdeaisSemana = Math.round(
-      totalMinutosSemana * (scoreAjustado / totalScores),
+      totalMinutosPeriodo * (scoreAjustado / totalScores),
     );
 
     const minutosReaisSemana = minutosReaisPorMateria.get(item.subjectId) ?? 0;
@@ -329,4 +355,16 @@ export async function getCycleAlignment(
       status,
     };
   });
+}
+
+/** [hoje - periodoDias + 1 dia às 00h, amanhã às 00h) — janela de `periodoDias` dias corridos terminando hoje, inclusive. */
+export function buildPeriodoRange(periodoDias: number): { start: Date; end: Date } {
+  const end = new Date();
+  end.setHours(0, 0, 0, 0);
+  end.setDate(end.getDate() + 1);
+
+  const start = new Date(end);
+  start.setDate(start.getDate() - periodoDias);
+
+  return { start, end };
 }
