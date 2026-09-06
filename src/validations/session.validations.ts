@@ -29,3 +29,8 @@ export const CreateSession = z
       path: ["duracaoAlvoMin"],
     },
   );
+
+export const FinishSession = z.object({
+  autoavaliacao: z.enum(["travei", "ok", "tranquilo"]),
+  nota: z.string().max(1000).optional(),
+});

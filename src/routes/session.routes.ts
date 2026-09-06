@@ -2,7 +2,7 @@ import { Router } from "express";
 import { sessionController } from "../controllers/session.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { validateBody } from "../middlewares/validation.middleware";
-import { CreateSession } from "../validations/session.validations";
+import { CreateSession, FinishSession } from "../validations/session.validations";
 
 const router = Router();
 
@@ -138,5 +138,59 @@ router.patch("/:id/pause", authMiddleware, sessionController.pause);
  *         description: Erro interno
  */
 router.patch("/:id/resume", authMiddleware, sessionController.resume);
+
+/**
+ * @openapi
+ * /api/sessions/{id}/finish:
+ *   post:
+ *     tags:
+ *       - SessÃ£o
+ *     summary: Encerra uma sessÃ£o e aplica seus efeitos
+ *     description: Fecha a sessÃ£o em uma Ãºnica transaÃ§Ã£o, calculando XP, nÃ­vel, streak, revisÃ£o e avanÃ§o do ciclo.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [autoavaliacao]
+ *             properties:
+ *               autoavaliacao:
+ *                 type: string
+ *                 enum: [travei, ok, tranquilo]
+ *               nota:
+ *                 type: string
+ *                 maxLength: 1000
+ *     responses:
+ *       200:
+ *         description: SessÃ£o encerrada com sucesso
+ *       401:
+ *         description: Token nÃ£o fornecido ou invÃ¡lido
+ *       403:
+ *         description: SessÃ£o pertence a outro usuÃ¡rio
+ *       404:
+ *         description: SessÃ£o nÃ£o encontrada
+ *       409:
+ *         description: SessÃ£o nÃ£o estÃ¡ running ou paused
+ *       422:
+ *         description: AutoavaliaÃ§Ã£o ausente ou nota invÃ¡lida
+ *       500:
+ *         description: Erro interno
+ */
+router.post(
+  "/:id/finish",
+  authMiddleware,
+  validateBody(FinishSession),
+  sessionController.finish,
+);
 
 export default router;

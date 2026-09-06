@@ -7,6 +7,7 @@ import StudyCyclerouter from "./cycle.routes";
 import SessionRouter from "./session.routes";
 import Homerouter from "./home.routes";
 import QuestionLogrouter from "./question-log.routes";
+import Reviewrouter from "./review.routes";
 
 const router = Router();
 
@@ -18,5 +19,6 @@ router.use("/cycles", StudyCyclerouter);
 router.use("/sessions", SessionRouter);
 router.use("/home", Homerouter);
 router.use("/question-logs", QuestionLogrouter);
+router.use("/reviews", Reviewrouter);
 
 export default router;
