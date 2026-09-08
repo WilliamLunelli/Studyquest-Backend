@@ -1,7 +1,10 @@
 {
-  "name": "platinabr",
+  "name": "studyquest-backend",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -14,7 +17,7 @@
   "keywords": [],
   "author": "William Lunelli",
   "license": "ISC",
-  "description": "O projeto é novo",
+  "description": "API do StudyQuest — planejador de rotina de estudos",
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/bcryptjs": "^2.4.6",

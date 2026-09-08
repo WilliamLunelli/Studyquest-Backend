@@ -271,6 +271,7 @@ model StudySession {
 
   @@index([userId, status])
   @@index([userId, startedAt])
+  @@index([userId, status, finishedAt])
   @@map("study_sessions")
 }
 
@@ -314,6 +315,7 @@ model QuestionLog {
   topic   Topic  @relation(fields: [topicId], references: [id])
 
   @@index([userId, topicId, data])
+  @@index([userId, data])
   @@map("question_logs")
 }
 

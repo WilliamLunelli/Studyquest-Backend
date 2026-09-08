@@ -19,6 +19,7 @@ export const studyCycleRepository = {
       select: {
         id: true,
         goalId: true,
+        createdAt: true,
 
         availabilities: {
           select: {
@@ -365,13 +366,24 @@ export const studyCycleRepository = {
     });
   },
 
-  getFinishedMinutesBySubject(userId: string) {
-    const startOfWeek = new Date();
-    startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+  /**
+   * Sem `range`: comportamento original, usado por GET /cycles/alignment
+   * (semana civil atual, domingo a sábado). Com `range`: usado pelo
+   * dashboard para agregar minutos reais num período arbitrário — ver
+   * cycle.service.ts::getCycleAlignment.
+   */
+  getFinishedMinutesBySubject(userId: string, range?: { start: Date; end: Date }) {
+    let start = range?.start;
+    let end = range?.end;
 
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(endOfWeek.getDate() + 7);
+    if (!start || !end) {
+      start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - start.getDay());
+
+      end = new Date(start);
+      end.setDate(end.getDate() + 7);
+    }
 
     return prisma.studySession.groupBy({
       by: ["subjectId"],
@@ -379,8 +391,8 @@ export const studyCycleRepository = {
         userId,
         status: "FINISHED",
         finishedAt: {
-          gte: startOfWeek,
-          lt: endOfWeek,
+          gte: start,
+          lt: end,
         },
       },
       _sum: {
