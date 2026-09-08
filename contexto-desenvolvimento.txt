@@ -1,68 +1,141 @@
 ========================================
   STUDYQUEST — CONTEXTO DE DESENVOLVIMENTO
-  Última sessão: 04/03/2026
+  Atualizado: 03/09/2026
 ========================================
 
-O QUE FOI FEITO HOJE
----------------------
-1. Schema do Prisma completo (prisma/schema.prisma)
-   - Modelos criados: User, StudySession, Subject, Area, Badge, UserBadge
-   - Migration rodada com sucesso (tabelas criadas no banco)
+MUDANÇA DE ESCOPO
+------------------
+O produto foi redesenhado. Saiu "diário de estudos com XP",
+entrou "planejador de rotina com ciclo de estudos, timer e
+revisão espaçada".
 
-2. Middleware de autenticação JWT
-   - Arquivo: src/middlewares/auth.middleware.ts
-   - Pega o token do header Authorization: Bearer <token>
-   - Valida o token com verifyToken()
-   - Salva o userId no req para as rotas usarem
+Leia CLAUDE.md antes de escrever qualquer código. As
+"Regras de Domínio Invioláveis" definem o produto — código
+que as viola está errado mesmo se funcionar.
 
-3. Tipos do Express estendidos
-   - Arquivo: src/types/express.d.ts
-   - Adicionado userId?: string no Request do Express
-
-
-PRÓXIMO PASSO — Endpoints de StudySession
-------------------------------------------
-Seguir a mesma estrutura que já existe para User:
-
-PASSO 1 — Criar src/services/session.service.ts
-  Funções:
-  - createSession(userId, subjectId, studyTime, questions, rate)
-    → salva a sessão no banco
-    → calcula e adiciona XP ao usuário
-  - listSessions(userId)
-    → retorna todas as sessões do usuário
-
-PASSO 2 — Criar src/controllers/session.controller.ts
-  - createSessionController → chama createSession do service
-  - listSessionsController  → chama listSessions do service
-
-PASSO 3 — Criar src/routes/session.routes.ts
-  - POST /sessions → authMiddleware + validateBody + createSessionController
-  - GET  /sessions → authMiddleware + listSessionsController
-
-PASSO 4 — Registrar em src/routes/index.ts
-  - Importar session.routes e adicionar: router.use("/sessions", Sessionrouter)
+Resumo do produto:
+  O sistema monta um ciclo de estudos com base no peso das
+  áreas no objetivo do usuário (ENEM ou concurso),
+  cronometra as sessões e agenda revisões automaticamente.
+  Não fornece conteúdo.
 
 
-DEPOIS DOS ENDPOINTS
----------------------
-- Cálculo de XP (dentro do createSession no service)
-- Sistema de streak (verificar se estudou ontem, manter ou zerar)
-- Sistema de badges (verificar conquistas após cada sessão)
+ESTADO ATUAL DO CÓDIGO
+-----------------------
+FUNCIONANDO (aproveitar):
+  - Auth completo: register, login, JWT, authMiddleware
+  - Estrutura route → controller → service → repository
+  - Setup de Zod, Swagger, Prisma, config de banco
+  - Convenções de nomenclatura e tratamento de erro
+  - src/types/express.d.ts com userId no Request
+
+PRECISA MUDAR:
+  - Schema do Prisma: modelo antigo (User, Area, Subject,
+    StudySession, Badge, UserBadge) → modelo novo (13 entidades,
+    ver CLAUDE.md)
+  - Area e Subject deixam de ser criados pelo usuário e viram
+    catálogo semeado
+  - StudySession vira sessão cronometrada com timestamps de servidor
+  - xp.utils.ts: mesma função, fórmula totalmente reescrita
+
+REMOVER:
+  - Campos produtividade, distracoes de StudySession
+  - Rotas de criar/editar/deletar Subject e Area
+  - POST /api/registros e GET /api/registros
+
+MANTER SEM DESENVOLVER:
+  - Badge e UserBadge (fase 2, mas estão no RF-005 do documento do PI)
 
 
-ARQUIVOS IMPORTANTES
----------------------
-- src/services/user.service.ts     → modelo de como escrever um service
-- src/controllers/user.controller.ts → modelo de como escrever um controller
-- src/routes/user.routes.ts        → modelo de como escrever uma route
-- src/middlewares/auth.middleware.ts → usar em toda rota protegida
-- src/middlewares/validation.middleware.ts → usar com schemas Zod
-- prisma/schema.prisma             → schema completo do banco
+ANTES DE COMEÇAR
+-----------------
+1. Criar tag no git marcando o estado da Fase 03
+     git tag fase-03-entrega && git push --tags
+   O documento do PI mapeia RFs a arquivos. Sem a tag, apagar
+   arquivo faz a fase anterior perder evidência de entrega.
+
+2. Migrar SQLite → PostgreSQL
+
+3. Banco limpo. Não vale a pena migrar dados de teste.
 
 
-COMO RODAR O PROJETO
----------------------
+HIERARQUIA DO CATÁLOGO
+-----------------------
+  Goal (Medicina · UFG  /  Analista Judiciário · TRT)
+    └── GoalWeight → Area (peso)
+                       └── Subject
+                             └── Topic
+
+  ENEM:     Area = Ciências da Natureza, Linguagens, Humanas,
+                   Matemática, Redação
+  Concurso: Area = blocos do edital (Conhecimentos Básicos,
+                   Conhecimentos Específicos)
+
+  O peso fica na ÁREA. A dificuldade autoavaliada fica na MATÉRIA.
+  Fórmula do ciclo:
+    score(subject) = peso(area) × (1 + (dificuldade - 3) × 0,15)
+
+
+TAREFA ATUAL — Módulo 1: Conta e onboarding
+--------------------------------------------
+Endpoints a entregar:
+  POST /api/auth/register          (já existe, ajustar resposta)
+  POST /api/auth/login             (já existe, adicionar onboardingCompleto)
+  GET  /api/auth/me                (novo)
+  GET  /api/goals                  (novo)
+  GET  /api/goals/:id/weights      (novo)
+  PUT  /api/me/goal                (novo)
+  PUT  /api/me/availability        (novo)
+  PUT  /api/me/difficulties        (novo)
+
+Dependência bloqueante: SEED do catálogo.
+Sem ele GET /goals volta vazio e o onboarding trava.
+Fazer o seed ANTES dos endpoints.
+
+Escopo mínimo do seed:
+  - 2 objetivos ENEM (ex: Medicina UFG, Medicina UFU)
+  - 1 objetivo concurso
+  - Áreas com pesos
+  - ~5 matérias por área
+  - ~5 assuntos por matéria
+
+Ver descrição completa da tarefa no Notion.
+
+
+ORDEM DE IMPLEMENTAÇÃO GERAL
+-----------------------------
+  A. Auth + onboarding + seed     ← ESTAMOS AQUI
+  B. Ciclo de estudos
+  C. Sessão + finish + revisão + gamificação   (mais difícil)
+  D. Registro de questões          (paralelizável com C)
+  E. Home + dashboard              (só leem o que já existe)
+
+Se atrasar, cortar do bloco E. Nunca do C.
+
+
+FORA DO ESCOPO DESTA FASE
+--------------------------
+Não implementar mesmo que pareça natural:
+  API externa de questões, badges, grupos, ranking, flashcards,
+  IA, simulados, push, pagamento.
+
+
+ARQUIVOS DE REFERÊNCIA
+-----------------------
+  src/services/user.service.ts        → modelo de service
+  src/controllers/user.controller.ts  → modelo de controller
+  src/routes/user.routes.ts           → modelo de route
+  src/middlewares/auth.middleware.ts  → usar em toda rota protegida
+  src/middlewares/validation.middleware.ts → usar com schemas Zod
+  prisma/schema.prisma                → schema do banco
+  prisma/seed.ts                      → catálogo (a criar)
+  CLAUDE.md                           → regras de domínio
+
+
+COMO RODAR
+-----------
   npm run dev
+  npx prisma migrate dev
+  npx prisma db seed
 
 ========================================

@@ -1,12 +1,12 @@
 import * as z from "zod";
 
 export const UserRegister = z.object({
+  nome: z.string().trim().min(2).max(60),
   email: z.email(),
-  username: z.string().min(3).max(20),
-  password: z.string().min(6),
+  senha: z.string().min(6),
 });
 
 export const UserLogin = z.object({
   email: z.email(),
-  password: z.string().min(1),
+  senha: z.string().min(1),
 });

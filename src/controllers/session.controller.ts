@@ -1,39 +1,69 @@
 import { Request, Response } from "express";
 import * as sessionService from "../services/session.service";
+import { handleControllerError } from "../utils/app-error";
 
-export const listSessionsController = async (req: Request, res: Response) => {
-  try {
-    const userId = req.userId!;
+export const sessionController = {
+  async create(req: Request, res: Response) {
+    try {
+      const session = await sessionService.startSession(req.userId!, req.body);
 
-    const sessions = await sessionService.listStudySessions(userId);
-
-    return res.status(200).json({ sessions });
-  } catch (error) {
-    return res.status(500).json({ error: "erro interno" });
-  }
-};
-
-export const createSessionController = async (req: Request, res: Response) => {
-  try {
-    const { subjectId, studyTime, questions, rate } = req.body;
-    const userId = req.userId!;
-
-    const session = await sessionService.createStudySession(
-      userId,
-      subjectId,
-      studyTime,
-      questions,
-      rate,
-    );
-
-    return res.status(201).json({
-      message: "Sessão de estudo criada com sucesso",
-      session,
-    });
-  } catch (error) {
-    if (error instanceof Error) {
-      return res.status(400).json({ error: error.message });
+      return res.status(201).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
     }
-    return res.status(500).json({ error: "erro interno" });
-  }
+  },
+
+  async getActive(req: Request, res: Response) {
+    try {
+      const session = await sessionService.getActiveSession(req.userId!);
+
+      if (!session) {
+        return res.status(204).send();
+      }
+
+      return res.status(200).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  },
+
+  async pause(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const session = await sessionService.pauseSession(req.userId!, id);
+
+      return res.status(200).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  },
+
+  async resume(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const session = await sessionService.resumeSession(req.userId!, id);
+
+      return res.status(200).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  },
+
+  async finish(req: Request<{ id: string }>, res: Response) {
+    try {
+      const { id } = req.params;
+
+      const session = await sessionService.finishSession(
+        req.userId!,
+        id,
+        req.body,
+      );
+
+      return res.status(200).json(session);
+    } catch (error) {
+      return handleControllerError(error, res);
+    }
+  },
 };

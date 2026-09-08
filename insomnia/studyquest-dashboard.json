@@ -1,0 +1,226 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-09-06T00:00:00.000Z",
+  "__export_source": "studyquest.claude-code",
+  "resources": [
+    {
+      "_id": "wrk_studyquest_dashboard",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "StudyQuest — Dashboard (Tarefa 10)",
+      "description": "Sequência: register -> me/goal -> me/difficulties -> me/availability -> cycles/generate -> sessions (start+finish) -> question-logs -> dashboard nos três períodos -> período inválido (422)"
+    },
+    {
+      "_id": "env_base_dashboard",
+      "_type": "environment",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://localhost:7777",
+        "token": "",
+        "goal_id": "",
+        "subject_id": "",
+        "topic_id": "",
+        "bloco_id": "",
+        "session_id": ""
+      }
+    },
+    {
+      "_id": "req_1_register",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "1. POST /auth/register (copie o token pra env.token)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/auth/register",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"nome\": \"Dashboard Tester\",\n  \"email\": \"dashboard-tester@teste.com\",\n  \"senha\": \"senha123\"\n}"
+      },
+      "headers": [{ "name": "Content-Type", "value": "application/json" }],
+      "metaSortKey": -1200
+    },
+    {
+      "_id": "req_2_goals",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "2. GET /goals (copie um id pra env.goal_id)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/goals",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -1100
+    },
+    {
+      "_id": "req_3_weights",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "3. GET /goals/:id/weights (copie um subjectId pra env.subject_id)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/goals/{{ _.goal_id }}/weights",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_4_set_goal",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "4. PUT /me/goal",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/goal",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"goalId\": \"{{ _.goal_id }}\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -900
+    },
+    {
+      "_id": "req_5_set_difficulties",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "5. PUT /me/difficulties (repita 'dificuldades' pra TODAS as matérias do objetivo)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/difficulties",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"dificuldades\": [\n    { \"subjectId\": \"{{ _.subject_id }}\", \"nivel\": 3 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -800
+    },
+    {
+      "_id": "req_6_set_availability",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "6. PUT /me/availability (7 dias, 60min cada)",
+      "method": "PUT",
+      "url": "{{ _.base_url }}/api/me/availability",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"disponibilidade\": [\n    { \"diaSemana\": 0, \"minutos\": 60 },\n    { \"diaSemana\": 1, \"minutos\": 60 },\n    { \"diaSemana\": 2, \"minutos\": 60 },\n    { \"diaSemana\": 3, \"minutos\": 60 },\n    { \"diaSemana\": 4, \"minutos\": 60 },\n    { \"diaSemana\": 5, \"minutos\": 60 },\n    { \"diaSemana\": 6, \"minutos\": 60 }\n  ]\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -700
+    },
+    {
+      "_id": "req_7_generate_cycle",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "7. POST /cycles/generate (copie topicId/blocoId do 1º bloco)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/cycles/generate",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -600
+    },
+    {
+      "_id": "req_8_start_session",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "8. POST /sessions (copie o id pra env.session_id)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"{{ _.subject_id }}\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"blocoId\": \"{{ _.bloco_id }}\",\n  \"tipo\": \"TEORIA\",\n  \"preset\": \"LIVRE\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -500
+    },
+    {
+      "_id": "req_9_finish_session",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "9. POST /sessions/:id/finish",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/sessions/{{ _.session_id }}/finish",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"autoavaliacao\": \"tranquilo\"\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -400
+    },
+    {
+      "_id": "req_10_question_log",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "10. POST /question-logs (20 feitas, 8 acertadas = 40%)",
+      "method": "POST",
+      "url": "{{ _.base_url }}/api/question-logs",
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"subjectId\": \"{{ _.subject_id }}\",\n  \"topicId\": \"{{ _.topic_id }}\",\n  \"feitas\": 20,\n  \"acertadas\": 8\n}"
+      },
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "Bearer {{ _.token }}" }
+      ],
+      "metaSortKey": -300
+    },
+    {
+      "_id": "req_11_dashboard_7d",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "11. GET /dashboard?periodo=7d",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/dashboard?periodo=7d",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -200
+    },
+    {
+      "_id": "req_12_dashboard_30d",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "12. GET /dashboard?periodo=30d (padrão)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/dashboard?periodo=30d",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": -100
+    },
+    {
+      "_id": "req_13_dashboard_90d",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "13. GET /dashboard?periodo=90d",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/dashboard?periodo=90d",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": 0
+    },
+    {
+      "_id": "req_14_dashboard_sem_periodo",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "14. GET /dashboard sem periodo (usa o padrão 30d)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/dashboard",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": 100
+    },
+    {
+      "_id": "req_15_dashboard_periodo_invalido",
+      "_type": "request",
+      "parentId": "wrk_studyquest_dashboard",
+      "name": "15. GET /dashboard?periodo=1y (espera 422)",
+      "method": "GET",
+      "url": "{{ _.base_url }}/api/dashboard?periodo=1y",
+      "headers": [{ "name": "Authorization", "value": "Bearer {{ _.token }}" }],
+      "metaSortKey": 200
+    }
+  ]
+}
